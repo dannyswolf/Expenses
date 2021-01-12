@@ -12,9 +12,8 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
-# V 0.2 Alfa
-# todo ενα function για ενημερωση πινακων με το πατημα των αριστερών κουμπιών
-# todo fix purchases table headers
+# V 0.3 Alfa
+# todo αλλαγή πεδίων με tab
 # -------------------------------------------------------------------------------
 
 from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate
@@ -37,7 +36,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(843, 400)
+        MainWindow.resize(860, 400)
         MainWindow.setMinimumSize(QSize(400, 400))
         MainWindow.setSizeIncrement(QSize(20, 20))
         MainWindow.setAutoFillBackground(False)
@@ -138,7 +137,7 @@ class Ui_MainWindow(object):
         self.payments_btn.setStyleSheet(u"background-color: rgb(0, 85, 0); color: rgb(255, 255, 255);")
         self.gridLayout_3.addWidget(self.payments_btn, 7, 0, 1, 1)
         self.payments_btn.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.payments_page))
-
+        self.payments_btn.clicked.connect(lambda: self.update_payments())
         # Stacked Widget
         self.stackedWidget = QStackedWidget(self.centralwidget)
         self.stackedWidget.setObjectName(u"stackedWidget")
@@ -854,23 +853,7 @@ class Ui_MainWindow(object):
         self.payments_tableWidget.setHorizontalHeaderItem(3, __qtablewidgetitem53)
 
         self.payments_tableWidget.setSortingEnabled(True)
-        self.payments_tableWidget.setRowCount(len(self.payments))
-        for row, data in enumerate(self.payments):
-            _id = QTableWidgetItem(str(data.id))
-            _id.setData(Qt.DisplayRole, float(data.id))
-            self.payments_tableWidget.setItem(row, 0, _id)
-            supplier = QTableWidgetItem(str(data.supplier))
-            self.payments_tableWidget.setItem(row, 1, supplier)
 
-            # Amount
-            amount = QTableWidgetItem(str(data.amount))
-            amount.setData(Qt.DisplayRole, int(data.amount))
-            self.payments_tableWidget.setItem(row, 2, amount)
-
-            # Date
-            date = QTableWidgetItem(str(data.date.strftime("%d/%m/%Y")))
-            date.setData(Qt.DisplayRole, QDate(data.date))
-            self.payments_tableWidget.setItem(row, 3, date)
 
         __qtablewidgetitem54 = QTableWidgetItem()
         self.payments_tableWidget.setVerticalHeaderItem(0, __qtablewidgetitem54)
@@ -1028,13 +1011,8 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem5 = self.purchases_tableWidget.horizontalHeaderItem(5)
         ___qtablewidgetitem5.setText(
             QCoreApplication.translate("MainWindow", u"\u0397\u03bc\u03b5\u03c1\u03bf\u03bc\u03b7\u03bd\u03af\u03b1",
-                                       None));
-        ___qtablewidgetitem6 = self.purchases_tableWidget.verticalHeaderItem(0)
-        ___qtablewidgetitem6.setText(QCoreApplication.translate("MainWindow", u"New Row", None));
-        ___qtablewidgetitem7 = self.purchases_tableWidget.verticalHeaderItem(1)
-        ___qtablewidgetitem7.setText(QCoreApplication.translate("MainWindow", u"New Row", None));
-        ___qtablewidgetitem8 = self.purchases_tableWidget.verticalHeaderItem(2)
-        ___qtablewidgetitem8.setText(QCoreApplication.translate("MainWindow", u"New Row", None));
+                                       None))
+
         self.product_description_label.setText(QCoreApplication.translate("MainWindow",
                                                                           u"\u03a0\u03b5\u03c1\u03b9\u03b3\u03c1\u03b1\u03c6\u03ae \u03c0\u03c1\u03bf\u03b9\u03cc\u03bd\u03c4\u03bf\u03c2",
                                                                           None))
@@ -1135,8 +1113,8 @@ class Ui_MainWindow(object):
 
     # Update Suppliers
     def update_suppliers(self):
-        # Διαγραφέι πίνακα
-        self.suppliers_tableWidget.clear()
+        # Πρώτα αδειάζουμε τον  πίνακα
+        self.suppliers_tableWidget.setRowCount(0)
         # Αποκόμηση νέων δεδομένων
         self.suppliers = get_data(Suppliers)
         # Ορισμός γραμμων
@@ -1167,8 +1145,8 @@ class Ui_MainWindow(object):
 
     # Update Purchases
     def update_purchases(self):
-        # Διαγραφέι πίνακα
-        self.purchases_tableWidget.clear()
+        # Πρώτα αδειάζουμε τον  πίνακα
+        self.purchases_tableWidget.setRowCount(0)
         # Αποκόμηση νέων δεδομένων
         self.purchases = get_data(Purchases)
         # Ορισμός γραμμων
@@ -1198,6 +1176,34 @@ class Ui_MainWindow(object):
         # Ενημέρωση του view
         self.purchases_tableWidget.viewport().update()
 
+    # Update Payments
+    def update_payments(self):
+        # Πρώτα αδειάζουμε τον πίνακα
+        self.payments_tableWidget.setRowCount(0)
+        # Αποκόμηση νέων δεδομένων
+        self.payments = get_data(Payments)
+        # Ορισμός γραμμων
+        self.payments_tableWidget.setRowCount(len(self.payments))
+        # Προβολή πληρωμών
+        for row, data in enumerate(self.payments):
+            _id = QTableWidgetItem(str(data.id))
+            _id.setData(Qt.DisplayRole, int(data.id))
+            self.payments_tableWidget.setItem(row, 0, _id)
+            supplier = QTableWidgetItem(str(data.supplier))
+            self.payments_tableWidget.setItem(row, 1, supplier)
+
+            # Amount
+            amount = QTableWidgetItem(str(data.amount))
+            amount.setData(Qt.DisplayRole, int(data.amount))
+            self.payments_tableWidget.setItem(row, 2, amount)
+
+            # Date
+            date = QTableWidgetItem(str(data.date.strftime("%d/%m/%Y")))
+            date.setData(Qt.DisplayRole, QDate(data.date))
+            self.payments_tableWidget.setItem(row, 3, date)
+        # Ενημέρωση του view
+        self.payments_tableWidget.viewport().update()
+
     # Αποθήκευση τιμπολογίου - αγοράς
     def save_import(self):
         print(40 * "#", "Αποθήκευση τιμπολογίου - αγοράς", 40 * "#")
@@ -1209,28 +1215,35 @@ class Ui_MainWindow(object):
         product = self.product_description_plainTextEdit.toPlainText()
         try:
             # Ευρεση id προμηθευτή με βάση το όνομα
-            supplier_id = Session.query(Suppliers).filter_by(name=supplier).one_or_none()
-            supplier_id = supplier_id.id
-        except NoResultFound as error: # Αν δεν υπάρχει αυτό το όνομα
-            print(40 * "#", "ERROR", error)
+            supplier = Session.query(Suppliers).filter_by(name=supplier).one_or_none()
+
+            supplier_id = supplier.id
+        except NoResultFound as error:  # Αν δεν υπάρχει αυτό το όνομα
+            print(40 * "#", "ERROR supplier_id", error)
             return
-        except MultipleResultsFound as error1: # Αν υπάρχουν πολυ με  αυτό το όνομα
+        except MultipleResultsFound as error1:  # Αν υπάρχουν πολυ με  αυτό το όνομα
             print(40 * "#", "ERROR supplier_id", error1)
             return
+
         try:
             # Ευρεση id παραλήπτη με βάση το όνομα
-            recipient_id = Session.query(Recipients).filter_by(name=recipient).one_or_none()
-            recipient_id = recipient_id.id
+            recipient = Session.query(Recipients).filter_by(name=recipient).one_or_none()
+            recipient_id = recipient.id
         except NoResultFound as error: # Αν δεν υπάρχει αυτό το όνομα
             print(40 * "#", "ERROR", error)
             return
         except MultipleResultsFound as error1: # Αν υπάρχουν πολυ με  αυτό το όνομα
             print(40 * "#", "ERROR recipient_id", error1)
             return
-
+        # Προσθήκη αγοράς στον πίνακα Purchases
         item = Purchases(supplier_id=supplier_id, recipient_id=recipient_id, price=amount,
                          product=product, date=date, file="C:\\")
         Session.add(item)
+
+        # Προσθήκη ποσού στο προμηθευτή αφου εγινε αγορα
+        supplier.balance += int(amount)
+        Session.add(supplier)
+
         Session.commit()
         print(40 * "#", "Save Done", 40 * "#")
 
@@ -1247,22 +1260,22 @@ class Ui_MainWindow(object):
 
         supplier = Session.query(Suppliers).filter_by(name=supplier_name).one_or_none()
         supplier_id = supplier.id
-
+        # Αφαίρεση ποσού απο τον προμηθευτή
         current_balance = int(supplier.balance)
         new_balance = int(current_balance) - int(amount)
-
         supplier.balance = new_balance
         Session.add(supplier)
+        Session.commit()
+        # Ενημέρωση πίνακα πληρωμών
+        payment = Payments(supplier_id=supplier_id, amount=amount, date=date)
+        Session.add(payment)
         Session.commit()
         print(40 * "#", "Ολοκλήρωση πληρωμής", 40 * "#")
 
 
-
-
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    # Ορισμός εμφάνισης
     app.setStyle(QStyleFactory.create("Fusion"))
     MainWindow = QMainWindow(parent=None)
     ui = Ui_MainWindow()
