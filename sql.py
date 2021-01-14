@@ -94,7 +94,7 @@ class Payments(Base):
     def __str__(self):
         return f"{self.supplier} {self.amount} {self.date}"
 
-
+# Αποκόμηση δεδομένων απο τον πίνακα
 def get_data(table):
     data = Session.query(table).all()
     return data

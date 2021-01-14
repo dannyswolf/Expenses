@@ -12,24 +12,54 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 0.4 Alfa autocomplete on search lines
 # V 0.3 Alfa
 # todo αλλαγή πεδίων με tab
+# todo fix search on purchases
 # -------------------------------------------------------------------------------
 
 from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate
-from PySide2.QtGui import QPalette, QFont, QBrush, QCursor, QColor, QValidator
+from PySide2.QtGui import QPalette, QFont, QBrush, QCursor, QColor, QKeySequence
 from PySide2.QtWidgets import QAbstractScrollArea, QTableWidgetItem, QTableWidget, QLineEdit, QLabel, QFrame, \
     QMainWindow, QComboBox, QStackedWidget, QPushButton, QSizePolicy, QWidget, QGridLayout, QApplication, \
     QStyleFactory, QAbstractItemView, QDateEdit, QAbstractSpinBox, QDateTimeEdit, QSpinBox, QPlainTextEdit, \
-    QMenu, QMenuBar
+    QMenu, QMenuBar, QShortcut, QCompleter
 
-import datetime
 import sys
 from settings import root_logger, version
 from sql import Suppliers, Recipients, Payments, Purchases, Session, get_data, MultipleResultsFound, NoResultFound
 
 sys.stderr.write = root_logger.error
 sys.stdout.write = root_logger.info
+
+
+# Αυτόματο συπλήρωμα αναζήτησης (QLineEdit)
+# Πρώτα περνουμε τα δεδομένα απο τους πίνακες
+# μετά τα στέλνουμε σε QCompleter
+def autocomplete(table):
+    data = [r for r in Session.query(table).all()]
+    list_data = []
+    if "Purchases" in str(table):
+        for item in data:
+            list_data.append(item.supplier.name)
+        # Για να μήν έχει δυπλότυπα βαζουμε set
+        return sorted(set(list_data))
+
+    elif "Recipients" in str(table):
+        for recipient in data:
+            list_data.append(recipient.name)
+        return sorted(list_data)
+
+    elif "Payments" in str(table):
+        for item in data:
+            list_data.append(item.supplier.name)
+        # Για να μήν έχει δυπλότυπα βαζουμε set
+        return sorted(set(list_data))
+
+    elif "Suppliers" in str(table):
+        for supplier in data:
+            list_data.append(supplier.name)
+        return sorted(list_data)
 
 
 class Ui_MainWindow(object):
@@ -46,9 +76,8 @@ class Ui_MainWindow(object):
 
         self.suppliers = get_data(Suppliers)
         self.recipients = get_data(Recipients)
-        self.purchases  = get_data(Purchases)
+        self.purchases = get_data(Purchases)
         self.payments = get_data(Payments)
-
 
         self.font = QFont()
         self.font.setFamily(u"Calibri")
@@ -176,17 +205,20 @@ class Ui_MainWindow(object):
         self.export_purchases_btn.setFont(font2)
         self.export_purchases_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);")
         self.gridLayout_7.addWidget(self.export_purchases_btn, 3, 0, 1, 2)
+        # Κουμπί αναζήτησης αγορών
         self.search_purchases_btn = QPushButton(self.purchases_page)
         self.search_purchases_btn.setObjectName(u"search_purchases_btn")
         self.search_purchases_btn.setMinimumSize(QSize(200, 31))
         self.search_purchases_btn.setSizeIncrement(QSize(1, 1))
         self.search_purchases_btn.setBaseSize(QSize(200, 200))
+
         font3 = QFont()
         font3.setFamily(u"Calibri")
         font3.setPointSize(12)
         font3.setBold(True)
         font3.setWeight(75)
         self.search_purchases_btn.setFont(font3)
+        self.search_purchases_btn.clicked.connect(lambda: self.update_purchases(self.search_purchases_edit.text()))
         self.gridLayout_7.addWidget(self.search_purchases_btn, 1, 1, 1, 1)
         self.search_purchases_edit = QLineEdit(self.purchases_page)
         self.search_purchases_edit.setObjectName(u"search_purchases_edit")
@@ -195,32 +227,38 @@ class Ui_MainWindow(object):
         font4.setFamily(u"Calibri")
         font4.setPointSize(12)
         self.search_purchases_edit.setFont(font4)
+
+        # Autocomplete
+        self.list_to_search_purchases = autocomplete(Purchases)
+        self.purchases_completer = QCompleter(self.list_to_search_purchases)
+        self.search_purchases_edit.setCompleter(self.purchases_completer)
+
         self.gridLayout_7.addWidget(self.search_purchases_edit, 1, 0, 1, 1)
         self.purchases_tableWidget = QTableWidget(self.purchases_page)
         if (self.purchases_tableWidget.columnCount() < 6):
             self.purchases_tableWidget.setColumnCount(6)
         __qtablewidgetitem = QTableWidgetItem()
-        __qtablewidgetitem.setFont(font4);
+        __qtablewidgetitem.setFont(font4)
         self.purchases_tableWidget.setHorizontalHeaderItem(0, __qtablewidgetitem)
         __qtablewidgetitem1 = QTableWidgetItem()
-        __qtablewidgetitem1.setTextAlignment(Qt.AlignCenter);
-        __qtablewidgetitem1.setFont(font3);
+        __qtablewidgetitem1.setTextAlignment(Qt.AlignCenter)
+        __qtablewidgetitem1.setFont(font3)
         self.purchases_tableWidget.setHorizontalHeaderItem(1, __qtablewidgetitem1)
         __qtablewidgetitem2 = QTableWidgetItem()
-        __qtablewidgetitem2.setTextAlignment(Qt.AlignCenter);
-        __qtablewidgetitem2.setFont(font3);
+        __qtablewidgetitem2.setTextAlignment(Qt.AlignCenter)
+        __qtablewidgetitem2.setFont(font3)
         self.purchases_tableWidget.setHorizontalHeaderItem(2, __qtablewidgetitem2)
         __qtablewidgetitem3 = QTableWidgetItem()
-        __qtablewidgetitem3.setTextAlignment(Qt.AlignCenter);
-        __qtablewidgetitem3.setFont(font3);
+        __qtablewidgetitem3.setTextAlignment(Qt.AlignCenter)
+        __qtablewidgetitem3.setFont(font3)
         self.purchases_tableWidget.setHorizontalHeaderItem(3, __qtablewidgetitem3)
         __qtablewidgetitem4 = QTableWidgetItem()
-        __qtablewidgetitem4.setTextAlignment(Qt.AlignCenter);
-        __qtablewidgetitem4.setFont(font3);
+        __qtablewidgetitem4.setTextAlignment(Qt.AlignCenter)
+        __qtablewidgetitem4.setFont(font3)
         self.purchases_tableWidget.setHorizontalHeaderItem(4, __qtablewidgetitem4)
         __qtablewidgetitem5 = QTableWidgetItem()
-        __qtablewidgetitem5.setTextAlignment(Qt.AlignCenter);
-        __qtablewidgetitem5.setFont(font3);
+        __qtablewidgetitem5.setTextAlignment(Qt.AlignCenter)
+        __qtablewidgetitem5.setFont(font3)
         self.purchases_tableWidget.setHorizontalHeaderItem(5, __qtablewidgetitem5)
 
         self.purchases_tableWidget.setRowCount(len(self.purchases))
@@ -258,8 +296,6 @@ class Ui_MainWindow(object):
         self.purchases_tableWidget.verticalHeader().setHighlightSections(True)
         self.purchases_tableWidget.setUpdatesEnabled(True)
 
-
-
         self.gridLayout_7.addWidget(self.purchases_tableWidget, 2, 0, 1, 2)
         self.stackedWidget.addWidget(self.purchases_page)
 
@@ -288,6 +324,20 @@ class Ui_MainWindow(object):
         self.product_description_label.setFont(font3)
         self.product_description_label.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.gridLayout.addWidget(self.product_description_label, 9, 0, 1, 1)
+
+        # Προμηθευτής
+        self.supplier_qcompobox = QComboBox(self.import_page)
+        self.supplier_qcompobox.setObjectName(u"supplier_qcompobox")
+        self.supplier_qcompobox.setEnabled(True)
+        self.supplier_qcompobox.setMinimumSize(QSize(0, 31))
+        self.supplier_qcompobox.setFont(font3)
+        self.supplier_qcompobox.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_qcompobox.addItems(sorted([f"{supplier}" for supplier in self.suppliers], key=str.lower))
+        self.supplier_qcompobox.setEditable(True)
+        self.supplier_qcompobox.lineEdit().setFont(font3)
+        self.supplier_qcompobox.validator()
+        self.gridLayout.addWidget(self.supplier_qcompobox, 1, 1, 1, 1)
+        # Τιμολόγιο
         self.invoice_edit = QLineEdit(self.import_page)
         self.invoice_edit.setObjectName(u"invoice_edit")
         self.invoice_edit.setMinimumSize(QSize(0, 31))
@@ -295,6 +345,7 @@ class Ui_MainWindow(object):
         self.invoice_edit.setFont(font3)
         self.invoice_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.gridLayout.addWidget(self.invoice_edit, 3, 1, 1, 1)
+        # Ημερομηνία εισαγωγής
         self.date_edit = QDateEdit(self.import_page)
         self.date_edit.setObjectName(u"date_edit")
         self.date_edit.setMinimumSize(QSize(0, 31))
@@ -316,29 +367,39 @@ class Ui_MainWindow(object):
         self.date_edit.setDisplayFormat(u"d/M/yy")
         self.date_edit.setCalendarPopup(True)
         self.gridLayout.addWidget(self.date_edit, 4, 1, 1, 1)
+
+        # Παραλήπτης
         self.recipient_comboBox = QComboBox(self.import_page)
         self.recipient_comboBox.setObjectName(u"recipient_comboBox")
         self.recipient_comboBox.setMinimumSize(QSize(0, 31))
         self.recipient_comboBox.setMaximumSize(QSize(16777215, 16777215))
         self.recipient_comboBox.setFont(font3)
         self.recipient_comboBox.setStyleSheet(u"color: rgb(255, 255, 255);")
-        self.recipient_comboBox.addItems(sorted([f"{recipient}" for recipient in self.recipients]))
+        self.recipient_comboBox.addItems(sorted([f"{recipient}" for recipient in self.recipients], key=str.lower))
         self.recipient_comboBox.setEditable(True)
         self.recipient_comboBox.lineEdit().setFont(font3)
         self.gridLayout.addWidget(self.recipient_comboBox, 6, 1, 1, 1)
-        self.supplier_qcompobox = QComboBox(self.import_page)
-        self.supplier_qcompobox.setObjectName(u"supplier_qcompobox")
-        self.supplier_qcompobox.setEnabled(True)
-        self.supplier_qcompobox.setMinimumSize(QSize(0, 31))
-        self.supplier_qcompobox.setFont(font3)
-        self.supplier_qcompobox.setStyleSheet(u"color: rgb(255, 255, 255);")
-        self.supplier_qcompobox.addItems(sorted([f"{supplier}" for supplier in self.suppliers]))
-        self.supplier_qcompobox.setEditable(True)
-        self.supplier_qcompobox.lineEdit().setFont(font3)
 
-        self.supplier_qcompobox.validator()
+        # Ποσό εισαγωγής
+        self.amount_doubleSpinBox_at_import_page = QSpinBox(self.import_page)
+        self.amount_doubleSpinBox_at_import_page.setObjectName(u"amount_doubleSpinBox_at_import_page")
+        self.amount_doubleSpinBox_at_import_page.setMinimumSize(QSize(0, 31))
+        self.amount_doubleSpinBox_at_import_page.setFont(font3)
+        self.amount_doubleSpinBox_at_import_page.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.amount_doubleSpinBox_at_import_page.setMaximum(9999999)
+        self.gridLayout.addWidget(self.amount_doubleSpinBox_at_import_page, 8, 1, 1, 1)
+        # Προίον
+        self.product_description_plainTextEdit = QPlainTextEdit(self.import_page)
+        self.product_description_plainTextEdit.setObjectName(u"product_description_plainTextEdit")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.product_description_plainTextEdit.sizePolicy().hasHeightForWidth())
+        self.product_description_plainTextEdit.setSizePolicy(sizePolicy4)
+        self.product_description_plainTextEdit.setFont(font3)
+        self.product_description_plainTextEdit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout.addWidget(self.product_description_plainTextEdit, 9, 1, 1, 2)
 
-        self.gridLayout.addWidget(self.supplier_qcompobox, 1, 1, 1, 1)
         self.add_file_btn = QPushButton(self.import_page)
         self.add_file_btn.setObjectName(u"add_file_btn")
         sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -371,13 +432,6 @@ class Ui_MainWindow(object):
                                                "background-color: rgb(63, 63, 63);")
         self.gridLayout.addWidget(self.insert_recipier_btn, 6, 2, 1, 1)
 
-        self.amount_doubleSpinBox_at_import_page = QSpinBox(self.import_page)
-        self.amount_doubleSpinBox_at_import_page.setObjectName(u"amount_doubleSpinBox_at_import_page")
-        self.amount_doubleSpinBox_at_import_page.setMinimumSize(QSize(0, 31))
-        self.amount_doubleSpinBox_at_import_page.setFont(font3)
-        self.amount_doubleSpinBox_at_import_page.setStyleSheet(u"color: rgb(255, 255, 255);")
-        self.amount_doubleSpinBox_at_import_page.setMaximum(9999999)
-        self.gridLayout.addWidget(self.amount_doubleSpinBox_at_import_page, 8, 1, 1, 1)
         self.date_label = QLabel(self.import_page)
         self.date_label.setObjectName(u"date_label")
         self.date_label.setMinimumSize(QSize(0, 31))
@@ -415,16 +469,7 @@ class Ui_MainWindow(object):
         self.supplier_label.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.supplier_label.setAlignment(Qt.AlignCenter)
         self.gridLayout.addWidget(self.supplier_label, 1, 0, 1, 1)
-        self.product_description_plainTextEdit = QPlainTextEdit(self.import_page)
-        self.product_description_plainTextEdit.setObjectName(u"product_description_plainTextEdit")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.product_description_plainTextEdit.sizePolicy().hasHeightForWidth())
-        self.product_description_plainTextEdit.setSizePolicy(sizePolicy4)
-        self.product_description_plainTextEdit.setFont(font3)
-        self.product_description_plainTextEdit.setStyleSheet(u"color: rgb(255, 255, 255);")
-        self.gridLayout.addWidget(self.product_description_plainTextEdit, 9, 1, 1, 2)
+
         self.save_btn = QPushButton(self.import_page)
         self.save_btn.setObjectName(u"save_btn")
         self.save_btn.setEnabled(True)
@@ -482,7 +527,8 @@ class Ui_MainWindow(object):
         self.supplier_qcompobox_at_pay_page.setFont(font3)
         self.supplier_qcompobox_at_pay_page.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.supplier_qcompobox_at_pay_page.setPlaceholderText(u"")
-        self.supplier_qcompobox_at_pay_page.addItems(sorted([f"{supplier}" for supplier in self.suppliers]))
+        self.supplier_qcompobox_at_pay_page.addItems(
+            sorted([f"{supplier}" for supplier in self.suppliers], key=str.lower))
         self.gridLayout_5.addWidget(self.supplier_qcompobox_at_pay_page, 2, 0, 1, 1)
         self.price_label_at_pay_page = QLabel(self.pay_page)
         self.price_label_at_pay_page.setObjectName(u"price_label_at_pay_page")
@@ -690,6 +736,11 @@ class Ui_MainWindow(object):
         self.search_supplier_edit.setMinimumSize(QSize(0, 31))
         self.search_supplier_edit.setFont(font3)
         self.search_supplier_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        # Autocomplete
+        self.list_to_search_supplier = autocomplete(Suppliers)
+        self.suppliers_completer = QCompleter(self.list_to_search_supplier)
+        self.search_supplier_edit.setCompleter(self.suppliers_completer)
+
         self.gridLayout_2.addWidget(self.search_supplier_edit, 2, 0, 1, 1)
         self.search_supplier_btn = QPushButton(self.suppliers_page)
         self.search_supplier_btn.setObjectName(u"search_supplier_btn")
@@ -787,7 +838,7 @@ class Ui_MainWindow(object):
         self.gridLayout_4.addWidget(self.insert_recipient_btn_at_recipient_page, 4, 0, 1, 2)
         self.search_recipient_btn = QPushButton(self.recipients_page)
         self.search_recipient_btn.setObjectName(u"search_recipient_btn")
-        self.search_recipient_btn.setMinimumSize(QSize(200, 0))
+        self.search_recipient_btn.setMinimumSize(QSize(200, 31))
         self.search_recipient_btn.setFont(font3)
         self.search_recipient_btn.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.search_recipient_btn.setText(u"\u0391\u03bd\u03b1\u03b6\u03ae\u03c4\u03b7\u03c3\u03b7")
@@ -796,6 +847,11 @@ class Ui_MainWindow(object):
         self.search_recipient_edit.setObjectName(u"search_recipient_edit")
         self.search_recipient_edit.setMinimumSize(QSize(0, 31))
         self.search_recipient_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        # Autocomplete
+        self.list_to_search_recipient = autocomplete(Recipients)
+        self.recipient_completer = QCompleter(self.list_to_search_recipient)
+        self.search_recipient_edit.setCompleter(self.recipient_completer)
+
         self.gridLayout_4.addWidget(self.search_recipient_edit, 2, 0, 1, 1)
         self.recipient_label_2 = QLabel(self.recipients_page)
         self.recipient_label_2.setObjectName(u"recipient_label_2")
@@ -827,6 +883,11 @@ class Ui_MainWindow(object):
         self.search_payments_edit = QLineEdit(self.payments_page)
         self.search_payments_edit.setObjectName(u"search_payments_edit")
         self.search_payments_edit.setMinimumSize(QSize(0, 31))
+        # Autocomplete
+        self.list_to_search_payments = autocomplete(Payments)
+        self.payments_completer = QCompleter(self.list_to_search_payments)
+        self.search_payments_edit.setCompleter(self.payments_completer)
+
         self.gridLayout_6.addWidget(self.search_payments_edit, 1, 0, 1, 1)
         self.export_payments_btn = QPushButton(self.payments_page)
         self.export_payments_btn.setObjectName(u"export_payments_btn")
@@ -853,7 +914,6 @@ class Ui_MainWindow(object):
         self.payments_tableWidget.setHorizontalHeaderItem(3, __qtablewidgetitem53)
 
         self.payments_tableWidget.setSortingEnabled(True)
-
 
         __qtablewidgetitem54 = QTableWidgetItem()
         self.payments_tableWidget.setVerticalHeaderItem(0, __qtablewidgetitem54)
@@ -1122,14 +1182,14 @@ class Ui_MainWindow(object):
         # Εισαγωγή δεδομένων
         # Προβολή προμηθευτών
         for row, data in enumerate(self.suppliers):
-            _id = QTableWidgetItem(str(data.id))
+            _id = QTableWidgetItem(data.id)
             _id.setData(Qt.DisplayRole, int(data.id))
             self.suppliers_tableWidget.setItem(row, 0, _id)
 
             name = QTableWidgetItem(str(data.name))
             self.suppliers_tableWidget.setItem(row, 1, name)
 
-            vat_nr = QTableWidgetItem(str(data.vat_nr))
+            vat_nr = QTableWidgetItem(data.vat_nr)
             vat_nr.setData(Qt.DisplayRole, int(data.vat_nr))
             self.suppliers_tableWidget.setItem(row, 2, vat_nr)
 
@@ -1137,18 +1197,28 @@ class Ui_MainWindow(object):
             phone.setData(Qt.DisplayRole, int(data.phone))
             self.suppliers_tableWidget.setItem(row, 3, phone)
 
-            balance = QTableWidgetItem(str(data.balance))
+            balance = QTableWidgetItem(data.balance)
             balance.setData(Qt.DisplayRole, int(data.balance))
             self.suppliers_tableWidget.setItem(row, 4, balance)
         # Ενημέρωση του view
         self.suppliers_tableWidget.viewport().update()
 
     # Update Purchases
-    def update_purchases(self):
+    def update_purchases(self, search_string=None):
         # Πρώτα αδειάζουμε τον  πίνακα
         self.purchases_tableWidget.setRowCount(0)
         # Αποκόμηση νέων δεδομένων
-        self.purchases = get_data(Purchases)
+
+        # Ελεγχος αν είναι απο αναζήτηση
+        if search_string:
+            print("search_string", search_string)
+            # Ευρεση id προμηθευτή με βάση το όνομα
+            supplier = Session.query(Suppliers).filter(Suppliers.name.like(search_string)).one_or_none()
+            self.purchases = Session.query(Purchases).filter(Purchases.supplier_id == supplier.id).all()
+            print("self.purchases", self.purchases)
+        else:
+            # Διαφορετικά είναι απο ενημέρωση πίνακα
+            self.purchases = get_data(Purchases)
         # Ορισμός γραμμων
         self.purchases_tableWidget.setRowCount(len(self.purchases))
         # Εισαγωγή δεδομένων
@@ -1170,8 +1240,9 @@ class Ui_MainWindow(object):
             recipient = QTableWidgetItem(str(data.recipient))
             self.purchases_tableWidget.setItem(row, 4, recipient)
             # Ημερομηνία
-            date = QTableWidgetItem(str(data.date))
-            date.setData(Qt.DisplayRole, data.date)
+            date = QTableWidgetItem(str(data.date.strftime("%d/%m/%Y")))
+
+            date.setData(Qt.DisplayRole, QDate(data.date))
             self.purchases_tableWidget.setItem(row, 5, date)
         # Ενημέρωση του view
         self.purchases_tableWidget.viewport().update()
@@ -1229,10 +1300,10 @@ class Ui_MainWindow(object):
             # Ευρεση id παραλήπτη με βάση το όνομα
             recipient = Session.query(Recipients).filter_by(name=recipient).one_or_none()
             recipient_id = recipient.id
-        except NoResultFound as error: # Αν δεν υπάρχει αυτό το όνομα
+        except NoResultFound as error:  # Αν δεν υπάρχει αυτό το όνομα
             print(40 * "#", "ERROR", error)
             return
-        except MultipleResultsFound as error1: # Αν υπάρχουν πολυ με  αυτό το όνομα
+        except MultipleResultsFound as error1:  # Αν υπάρχουν πολυ με  αυτό το όνομα
             print(40 * "#", "ERROR recipient_id", error1)
             return
         # Προσθήκη αγοράς στον πίνακα Purchases
@@ -1254,7 +1325,7 @@ class Ui_MainWindow(object):
         supplier_name = self.supplier_qcompobox_at_pay_page.currentData(Qt.DisplayRole)
         print("Προμηθευτή", supplier_name)
         # Ποσό
-        amount = self.amount_doubleSpinBox_at_pay_page.text()[:-1] # το τελευταίο είναι το € δεν το θελουμε
+        amount = self.amount_doubleSpinBox_at_pay_page.text()[:-1]  # το τελευταίο είναι το € δεν το θελουμε
         print("ποσό", amount)
         date = self.date_QDateEdit_at_pay_page.date().toPython()
 
