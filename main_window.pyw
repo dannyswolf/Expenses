@@ -12,10 +12,11 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 0.5 Παραθυρο αγορών ετοιμο
 # V 0.4 Alfa autocomplete on search lines
 # V 0.3 Alfa
 # todo αλλαγή πεδίων με tab
-# todo fix search on purchases
+#
 # -------------------------------------------------------------------------------
 
 from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate
@@ -23,9 +24,13 @@ from PySide2.QtGui import QPalette, QFont, QBrush, QCursor, QColor, QKeySequence
 from PySide2.QtWidgets import QAbstractScrollArea, QTableWidgetItem, QTableWidget, QLineEdit, QLabel, QFrame, \
     QMainWindow, QComboBox, QStackedWidget, QPushButton, QSizePolicy, QWidget, QGridLayout, QApplication, \
     QStyleFactory, QAbstractItemView, QDateEdit, QAbstractSpinBox, QDateTimeEdit, QSpinBox, QPlainTextEdit, \
-    QMenu, QMenuBar, QShortcut, QCompleter
+    QMenu, QMenuBar, QCompleter, QFileDialog, QMessageBox, QShortcut
+
+# Για εξαγωγή σε excel
+import pandas as pd
 
 import sys
+import os
 from settings import root_logger, version
 from sql import Suppliers, Recipients, Payments, Purchases, Session, get_data, MultipleResultsFound, NoResultFound
 
@@ -36,30 +41,20 @@ sys.stdout.write = root_logger.info
 # Αυτόματο συπλήρωμα αναζήτησης (QLineEdit)
 # Πρώτα περνουμε τα δεδομένα απο τους πίνακες
 # μετά τα στέλνουμε σε QCompleter
-def autocomplete(table):
-    data = [r for r in Session.query(table).all()]
+def autocomplete():
+    """
+    :return: Προμηθευτές και παραλήπτες
+    """
+    supplier_data = [r for r in Session.query(Suppliers).all()]
+    recipient_data = [r for r in Session.query(Recipients).all()]
     list_data = []
-    if "Purchases" in str(table):
-        for item in data:
-            list_data.append(item.supplier.name)
-        # Για να μήν έχει δυπλότυπα βαζουμε set
-        return sorted(set(list_data))
 
-    elif "Recipients" in str(table):
-        for recipient in data:
-            list_data.append(recipient.name)
-        return sorted(list_data)
-
-    elif "Payments" in str(table):
-        for item in data:
-            list_data.append(item.supplier.name)
-        # Για να μήν έχει δυπλότυπα βαζουμε set
-        return sorted(set(list_data))
-
-    elif "Suppliers" in str(table):
-        for supplier in data:
-            list_data.append(supplier.name)
-        return sorted(list_data)
+    for item in supplier_data:
+        list_data.append(item.name)
+    for item in recipient_data:
+        list_data.append(item.name)
+    # Για να μήν έχει δυπλότυπα βαζουμε set
+    return sorted(set(list_data))
 
 
 class Ui_MainWindow(object):
@@ -204,6 +199,7 @@ class Ui_MainWindow(object):
         font2.setWeight(75)
         self.export_purchases_btn.setFont(font2)
         self.export_purchases_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);")
+        self.export_purchases_btn.clicked.connect(lambda: self.extract_purchases())
         self.gridLayout_7.addWidget(self.export_purchases_btn, 3, 0, 1, 2)
         # Κουμπί αναζήτησης αγορών
         self.search_purchases_btn = QPushButton(self.purchases_page)
@@ -219,6 +215,7 @@ class Ui_MainWindow(object):
         font3.setWeight(75)
         self.search_purchases_btn.setFont(font3)
         self.search_purchases_btn.clicked.connect(lambda: self.update_purchases(self.search_purchases_edit.text()))
+
         self.gridLayout_7.addWidget(self.search_purchases_btn, 1, 1, 1, 1)
         self.search_purchases_edit = QLineEdit(self.purchases_page)
         self.search_purchases_edit.setObjectName(u"search_purchases_edit")
@@ -229,17 +226,19 @@ class Ui_MainWindow(object):
         self.search_purchases_edit.setFont(font4)
 
         # Autocomplete
-        self.list_to_search_purchases = autocomplete(Purchases)
+        self.list_to_search_purchases = autocomplete()
         self.purchases_completer = QCompleter(self.list_to_search_purchases)
         self.search_purchases_edit.setCompleter(self.purchases_completer)
+        self.search_purchases_edit.returnPressed.connect(lambda: self.update_purchases(self.search_purchases_edit.text()))
 
         self.gridLayout_7.addWidget(self.search_purchases_edit, 1, 0, 1, 1)
         self.purchases_tableWidget = QTableWidget(self.purchases_page)
-        if (self.purchases_tableWidget.columnCount() < 6):
-            self.purchases_tableWidget.setColumnCount(6)
+
+        self.purchases_tableWidget.setColumnCount(6)
         __qtablewidgetitem = QTableWidgetItem()
         __qtablewidgetitem.setFont(font4)
         self.purchases_tableWidget.setHorizontalHeaderItem(0, __qtablewidgetitem)
+
         __qtablewidgetitem1 = QTableWidgetItem()
         __qtablewidgetitem1.setTextAlignment(Qt.AlignCenter)
         __qtablewidgetitem1.setFont(font3)
@@ -288,13 +287,19 @@ class Ui_MainWindow(object):
         self.purchases_tableWidget.setSortingEnabled(True)
         self.purchases_tableWidget.setWordWrap(True)
         self.purchases_tableWidget.setCornerButtonEnabled(True)
-        self.purchases_tableWidget.horizontalHeader().setDefaultSectionSize(106)
+        # self.purchases_tableWidget.horizontalHeader().setDefaultSectionSize(106)
         self.purchases_tableWidget.horizontalHeader().setProperty("showSortIndicator", True)
         self.purchases_tableWidget.horizontalHeader().setStretchLastSection(True)
         self.purchases_tableWidget.verticalHeader().setVisible(False)
         self.purchases_tableWidget.verticalHeader().setDefaultSectionSize(30)
         self.purchases_tableWidget.verticalHeader().setHighlightSections(True)
         self.purchases_tableWidget.setUpdatesEnabled(True)
+        self.purchases_tableWidget.setColumnWidth(0, 1)
+        self.purchases_tableWidget.setColumnWidth(1, 200)
+        self.purchases_tableWidget.setColumnWidth(2, 200)
+        self.purchases_tableWidget.setColumnWidth(3, 60)
+        self.purchases_tableWidget.setColumnWidth(4, 100)
+        self.purchases_tableWidget.setColumnWidth(5, 50)
 
         self.gridLayout_7.addWidget(self.purchases_tableWidget, 2, 0, 1, 2)
         self.stackedWidget.addWidget(self.purchases_page)
@@ -737,7 +742,7 @@ class Ui_MainWindow(object):
         self.search_supplier_edit.setFont(font3)
         self.search_supplier_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
         # Autocomplete
-        self.list_to_search_supplier = autocomplete(Suppliers)
+        self.list_to_search_supplier = autocomplete()
         self.suppliers_completer = QCompleter(self.list_to_search_supplier)
         self.search_supplier_edit.setCompleter(self.suppliers_completer)
 
@@ -761,8 +766,7 @@ class Ui_MainWindow(object):
         # Προβολή παραληπτών
         self.recipient_tableWidget = QTableWidget(self.recipients_page)
 
-        if (self.recipient_tableWidget.columnCount() < 4):
-            self.recipient_tableWidget.setColumnCount(4)
+        self.recipient_tableWidget.setColumnCount(4)
         font8 = QFont()
         font8.setBold(False)
         font8.setWeight(50)
@@ -848,7 +852,7 @@ class Ui_MainWindow(object):
         self.search_recipient_edit.setMinimumSize(QSize(0, 31))
         self.search_recipient_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
         # Autocomplete
-        self.list_to_search_recipient = autocomplete(Recipients)
+        self.list_to_search_recipient = autocomplete()
         self.recipient_completer = QCompleter(self.list_to_search_recipient)
         self.search_recipient_edit.setCompleter(self.recipient_completer)
 
@@ -884,7 +888,7 @@ class Ui_MainWindow(object):
         self.search_payments_edit.setObjectName(u"search_payments_edit")
         self.search_payments_edit.setMinimumSize(QSize(0, 31))
         # Autocomplete
-        self.list_to_search_payments = autocomplete(Payments)
+        self.list_to_search_payments = autocomplete()
         self.payments_completer = QCompleter(self.list_to_search_payments)
         self.search_payments_edit.setCompleter(self.payments_completer)
 
@@ -896,8 +900,8 @@ class Ui_MainWindow(object):
         self.export_payments_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);")
         self.gridLayout_6.addWidget(self.export_payments_btn, 3, 0, 1, 3)
         self.payments_tableWidget = QTableWidget(self.payments_page)
-        if (self.payments_tableWidget.columnCount() < 4):
-            self.payments_tableWidget.setColumnCount(4)
+
+        self.payments_tableWidget.setColumnCount(4)
         __qtablewidgetitem50 = QTableWidgetItem()
         self.payments_tableWidget.setHorizontalHeaderItem(0, __qtablewidgetitem50)
         __qtablewidgetitem51 = QTableWidgetItem()
@@ -1207,15 +1211,16 @@ class Ui_MainWindow(object):
     def update_purchases(self, search_string=None):
         # Πρώτα αδειάζουμε τον  πίνακα
         self.purchases_tableWidget.setRowCount(0)
-        # Αποκόμηση νέων δεδομένων
-
-        # Ελεγχος αν είναι απο αναζήτηση
+        # if search_string == "enter":
+        #     search_string = self.search_purchases_edit.text()
+        # Αποκόμηση νέων δεδομένων και ελεγχος αν είναι απο αναζήτηση
         if search_string:
-            print("search_string", search_string)
-            # Ευρεση id προμηθευτή με βάση το όνομα
-            supplier = Session.query(Suppliers).filter(Suppliers.name.like(search_string)).one_or_none()
-            self.purchases = Session.query(Purchases).filter(Purchases.supplier_id == supplier.id).all()
-            print("self.purchases", self.purchases)
+            self.purchases = Session.query(Purchases).join(Suppliers, Recipients).filter(
+                Suppliers.name.like(search_string) |
+                (Recipients.name.like(search_string)) |
+                (Purchases.price.like(search_string)) |
+                (Purchases.product.like(search_string)) |
+                (Purchases.date.like(search_string))).all()
         else:
             # Διαφορετικά είναι απο ενημέρωση πίνακα
             self.purchases = get_data(Purchases)
@@ -1240,9 +1245,9 @@ class Ui_MainWindow(object):
             recipient = QTableWidgetItem(str(data.recipient))
             self.purchases_tableWidget.setItem(row, 4, recipient)
             # Ημερομηνία
-            date = QTableWidgetItem(str(data.date.strftime("%d/%m/%Y")))
-
-            date.setData(Qt.DisplayRole, QDate(data.date))
+            date = QTableWidgetItem(str(data.date))
+            QDate_obj = QDate.fromString(data.date, "dd/MM/yyyy")
+            date.setData(Qt.DisplayRole, QDate_obj)
             self.purchases_tableWidget.setItem(row, 5, date)
         # Ενημέρωση του view
         self.purchases_tableWidget.viewport().update()
@@ -1269,9 +1274,11 @@ class Ui_MainWindow(object):
             self.payments_tableWidget.setItem(row, 2, amount)
 
             # Date
-            date = QTableWidgetItem(str(data.date.strftime("%d/%m/%Y")))
-            date.setData(Qt.DisplayRole, QDate(data.date))
+            date = QTableWidgetItem(str(data.date))
+            QDate_obj = QDate.fromString(data.date, "dd/MM/yyyy")
+            date.setData(Qt.DisplayRole, QDate_obj)
             self.payments_tableWidget.setItem(row, 3, date)
+
         # Ενημέρωση του view
         self.payments_tableWidget.viewport().update()
 
@@ -1280,7 +1287,8 @@ class Ui_MainWindow(object):
         print(40 * "#", "Αποθήκευση τιμπολογίου - αγοράς", 40 * "#")
         supplier = self.supplier_qcompobox.currentData(Qt.DisplayRole)
         invoice_nr = self.invoice_edit.text()
-        date = self.date_edit.date().toPython()
+        date = self.date_edit.date().toPython().strftime("%d/%m/%Y")
+        print("date", date)
         recipient = self.recipient_comboBox.currentData(Qt.DisplayRole)
         amount = self.amount_doubleSpinBox_at_import_page.text()[:-1]
         product = self.product_description_plainTextEdit.toPlainText()
@@ -1342,6 +1350,38 @@ class Ui_MainWindow(object):
         Session.add(payment)
         Session.commit()
         print(40 * "#", "Ολοκλήρωση πληρωμής", 40 * "#")
+
+    # Εξαγωγή αγορών
+    def extract_purchases(self):
+        """
+        :return: Αποθήκευση σε excel των στοιχειων που εμφανίζονται στον πίνακα αγορες
+        """
+        rows = self.purchases_tableWidget.rowCount()
+        columns = self.purchases_tableWidget.columnCount()
+
+        headers = [str(self.purchases_tableWidget.horizontalHeaderItem(i).text()) for i in range(columns)]
+        # Pandas Dataframe
+        # df indexing is slow, so use lists
+        df_list = []
+        for row in range(rows):
+            df_list2 = []
+            for col in range(columns):
+                table_item = self.purchases_tableWidget.item(row, col)
+                df_list2.append('' if table_item is None else table_item.text())
+            df_list.append(df_list2)
+
+        df = pd.DataFrame(df_list, columns=headers)
+        desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+
+        # filename == ('C:/Users/Dannys/Desktop/fa.xlsx', 'Excel (*.xlsx)')
+        filename = QFileDialog.getSaveFileName(None, 'Αποθήκευση αγορών', desktop,  "Excel (*.xlsx)")
+
+        if filename[0] == '':
+            return 0
+        writer = pd.ExcelWriter(filename[0], engine="xlsxwriter")
+        df.to_excel(writer, sheet_name="Αγορές", index=False)
+        writer.save()
+        msgBox = QMessageBox.information(None, "Πληροφορία", "Η εξαγωγή ολοκληρώθηκε.")
 
 
 if __name__ == "__main__":

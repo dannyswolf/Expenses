@@ -11,7 +11,7 @@ import datetime
 import sys
 from settings import database,  root_logger
 
-from sqlalchemy import create_engine, Column, Integer,  String, MetaData, ForeignKey, Date
+from sqlalchemy import create_engine, Column, Integer,  String, MetaData, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
@@ -76,7 +76,7 @@ class Purchases(Base):
     price = Column(Integer)
     product = Column(String(300))
     file = Column(String(360))
-    date = Column(Date)
+    date = Column(String(10))
 
 
 # Πληρωμές
@@ -86,7 +86,7 @@ class Payments(Base):
     supplier_id = Column(Integer, ForeignKey("Suppliers.id"))
     supplier = relationship("Suppliers", backref=backref("supplier"))
     amount = Column(Integer,  nullable=False)
-    date = Column(Date)
+    date = Column(String(10))
 
     def __repr__(self):
         return "<Payments(supplier_id='%i', amount='%i', date='%date')>" % (self.supplier_id, self.amount, self.date)
