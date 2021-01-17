@@ -14,9 +14,9 @@ import sys
 import datetime
 
 
-version = "V 0.6 Alfa"
+version = "V 0.7 Alfa"
 
-database = "outgoings4.db"
+database = "outgoings.db"
 
 # -------------ΔΗΜΗΟΥΡΓΕΙΑ LOG FILE και Ημερομηνία ------------------
 today = datetime.datetime.today().strftime("%d %m %Y")

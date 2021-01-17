@@ -13,7 +13,6 @@ from settings import database,  root_logger
 
 from sqlalchemy import create_engine, Column, Integer,  String, MetaData, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
 
 sys.stderr.write = root_logger.error
@@ -93,6 +92,7 @@ class Payments(Base):
 
     def __str__(self):
         return f"{self.supplier} {self.amount} {self.date}"
+
 
 # Αποκόμηση δεδομένων απο τον πίνακα
 def get_data(table):

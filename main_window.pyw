@@ -12,12 +12,13 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 0.7 Alfa Δυνατότηα προσθήκης προμηθευτή και παραλήπτη
 # V 0.6 Alfa ready to add 'add_supplier_page'
 # V 0.5 Alfa Παραθυρο αγορών ετοιμο
 # V 0.4 Alfa autocomplete on search lines
 # V 0.3 Alfa
 # todo αλλαγή πεδίων με tab
-# todo insert suppliers and recipients
+#
 # -------------------------------------------------------------------------------
 
 from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate
@@ -452,6 +453,7 @@ class Ui_MainWindow(object):
         self.insert_recipier_btn.setFont(font3)
         self.insert_recipier_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
                                                "background-color: rgb(63, 63, 63);")
+        self.insert_recipier_btn.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.add_recipient_page))
         self.gridLayout.addWidget(self.insert_recipier_btn, 6, 2, 1, 1)
 
         self.date_label = QLabel(self.import_page)
@@ -466,7 +468,9 @@ class Ui_MainWindow(object):
         self.insert_supplier_btn.setFont(font3)
         self.insert_supplier_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
                                                "background-color: rgb(7, 114, 255);")
+        self.insert_supplier_btn.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.add_supplier_page))
         self.gridLayout.addWidget(self.insert_supplier_btn, 1, 2, 1, 1)
+
         self.recipient_label = QLabel(self.import_page)
         self.recipient_label.setObjectName(u"recipient_label")
         sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
@@ -627,6 +631,7 @@ class Ui_MainWindow(object):
         self.insert_supplier_btn_at_suppliers_page.setFont(font7)
         self.insert_supplier_btn_at_suppliers_page.setStyleSheet(u"color: rgb(255, 255, 255);\n"
                                                                  "background-color: rgb(7, 114, 255);")
+        self.insert_supplier_btn_at_suppliers_page.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.add_supplier_page))
         self.gridLayout_2.addWidget(self.insert_supplier_btn_at_suppliers_page, 5, 1, 1, 1)
         self.export_suppliers_btn_at_suppliers_page = QPushButton(self.suppliers_page)
         self.export_suppliers_btn_at_suppliers_page.setObjectName(u"export_suppliers_btn_at_suppliers_page")
@@ -869,8 +874,8 @@ class Ui_MainWindow(object):
         self.insert_recipient_btn_at_recipient_page.setFont(font7)
         self.insert_recipient_btn_at_recipient_page.setStyleSheet(u"color: rgb(255, 255, 255);\n"
                                                                   "background-color: rgb(7, 114, 255);")
-        self.insert_recipient_btn_at_recipient_page.setText(
-            u"\u0395\u03b9\u03c3\u03b1\u03b3\u03c9\u03b3\u03ae \u03c0\u03b1\u03c1\u03b1\u03bb\u03ae\u03c0\u03c4\u03b7")
+        self.insert_recipient_btn_at_recipient_page.setText(u"Εισαγωγή παραλήπτη")
+        self.insert_recipient_btn_at_recipient_page.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.add_recipient_page))
         self.gridLayout_4.addWidget(self.insert_recipient_btn_at_recipient_page, 5, 1, 1, 1)
         self.search_recipient_btn = QPushButton(self.recipients_page)
         self.search_recipient_btn.setObjectName(u"search_recipient_btn")
@@ -1001,6 +1006,211 @@ class Ui_MainWindow(object):
         self.gridLayout_6.addWidget(self.search_payments_btn, 1, 1, 1, 2)
         self.stackedWidget.addWidget(self.payments_page)
 
+        ################################################################################################################
+        ###############                             Add supplier page                                             ######
+        ################################################################################################################
+
+        self.add_supplier_page = QWidget()
+        self.add_supplier_page.setObjectName(u"add_supplier_page")
+        self.gridLayout_8 = QGridLayout(self.add_supplier_page)
+        self.gridLayout_8.setSpacing(6)
+        self.gridLayout_8.setContentsMargins(6, 6, 6, 6)
+        self.gridLayout_8.setObjectName(u"gridLayout_8")
+
+        # Supplier Name
+        self.supplier_name_edit = QLineEdit(self.add_supplier_page)
+        self.supplier_name_edit.setObjectName(u"supplier_name_edit")
+        self.supplier_name_edit.setMinimumSize(QSize(0, 31))
+        self.supplier_name_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.supplier_name_edit.setFont(font3)
+        self.supplier_name_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_8.addWidget(self.supplier_name_edit, 1, 1, 1, 1)
+        # Supplier vat nr
+        self.supplier_vat_nr_edit = QLineEdit(self.add_supplier_page)
+        self.supplier_vat_nr_edit.setObjectName(u"supplier_vat_nr_edit")
+        self.supplier_vat_nr_edit.setMinimumSize(QSize(0, 31))
+        self.supplier_vat_nr_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.supplier_vat_nr_edit.setFont(font3)
+        self.supplier_vat_nr_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_8.addWidget(self.supplier_vat_nr_edit, 3, 1, 1, 1)
+        # Supplier Phone
+        self.supplier_phone_edit = QLineEdit(self.add_supplier_page)
+        self.supplier_phone_edit.setObjectName(u"supplier_phone_edit")
+        self.supplier_phone_edit.setMinimumSize(QSize(0, 31))
+        self.supplier_phone_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.supplier_phone_edit.setFont(font3)
+        self.supplier_phone_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_8.addWidget(self.supplier_phone_edit, 4, 1, 1, 1)
+        # Supplier address
+        self.supplier_address_edit = QLineEdit(self.add_supplier_page)
+        self.supplier_address_edit.setObjectName(u"supplier_address_edit")
+        self.supplier_address_edit.setMinimumSize(QSize(0, 31))
+        self.supplier_address_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.supplier_address_edit.setFont(font3)
+        self.supplier_address_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_8.addWidget(self.supplier_address_edit, 5, 1, 1, 1)
+        # Supplier balance
+        self.supplier_balance_edit = QSpinBox(self.add_supplier_page)
+        self.supplier_balance_edit.setObjectName(u"supplier_balance_edit")
+        self.supplier_balance_edit.setMinimumSize(QSize(0, 31))
+        self.supplier_balance_edit.setFont(font3)
+        self.supplier_balance_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_balance_edit.setMaximum(999999)
+        self.gridLayout_8.addWidget(self.supplier_balance_edit, 7, 1, 1, 1)
+
+        self.save_supplier_btn = QPushButton(self.add_supplier_page)
+        self.save_supplier_btn.setObjectName(u"save_supplier_btn")
+        self.save_supplier_btn.setEnabled(True)
+        sizePolicy3.setHeightForWidth(self.save_supplier_btn.sizePolicy().hasHeightForWidth())
+        self.save_supplier_btn.setSizePolicy(sizePolicy3)
+        self.save_supplier_btn.setMinimumSize(QSize(0, 60))
+        self.save_supplier_btn.setFont(font3)
+        self.save_supplier_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
+                                             "background-color: rgb(92, 184, 78);")
+        self.save_supplier_btn.clicked.connect(lambda: self.add_supplier())
+        self.gridLayout_8.addWidget(self.save_supplier_btn, 9, 0, 1, 3)
+
+        self.supplier_name_label = QLabel(self.add_supplier_page)
+        self.supplier_name_label.setObjectName(u"supplier_name_label")
+        self.supplier_name_label.setMinimumSize(QSize(0, 31))
+        self.supplier_name_label.setFont(font3)
+        self.supplier_name_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_name_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.supplier_name_label, 1, 0, 1, 1)
+
+        self.supplier_address_label = QLabel(self.add_supplier_page)
+        self.supplier_address_label.setObjectName(u"supplier_address_label")
+        self.supplier_address_label.setMinimumSize(QSize(0, 31))
+        self.supplier_address_label.setFont(font3)
+        self.supplier_address_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_address_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.supplier_address_label, 5, 0, 1, 1)
+
+
+        self.supplier_balance_label = QLabel(self.add_supplier_page)
+        self.supplier_balance_label.setObjectName(u"supplier_balance_label")
+        self.supplier_balance_label.setMinimumSize(QSize(0, 31))
+        self.supplier_balance_label.setFont(font3)
+        self.supplier_balance_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_balance_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.supplier_balance_label, 7, 0, 1, 1)
+
+        self.vat_nr_label = QLabel(self.add_supplier_page)
+        self.vat_nr_label.setObjectName(u"vat_nr_label")
+        self.vat_nr_label.setMinimumSize(QSize(0, 31))
+        self.vat_nr_label.setFont(font3)
+        self.vat_nr_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.vat_nr_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.vat_nr_label, 3, 0, 1, 1)
+
+        self.supplier_phone_label = QLabel(self.add_supplier_page)
+        self.supplier_phone_label.setObjectName(u"supplier_phone_label")
+        self.supplier_phone_label.setMinimumSize(QSize(0, 31))
+        self.supplier_phone_label.setFont(font3)
+        self.supplier_phone_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.supplier_phone_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.supplier_phone_label, 4, 0, 1, 1)
+
+        self.insert_supplier_label = QLabel(self.add_supplier_page)
+        self.insert_supplier_label.setObjectName(u"insert_supplier_label")
+        self.insert_supplier_label.setMinimumSize(QSize(0, 51))
+        self.insert_supplier_label.setMaximumSize(QSize(16777215, 51))
+        self.insert_supplier_label.setFont(font1)
+        self.insert_supplier_label.setStyleSheet(u"background-color: rgb(85, 85, 255);")
+        self.insert_supplier_label.setText(u"Εισαγωγή προμηθευτή")
+        self.insert_supplier_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_8.addWidget(self.insert_supplier_label, 0, 0, 1, 3)
+        self.stackedWidget.addWidget(self.add_supplier_page)
+
+        ################################################################################################################
+        ###############                             Finish Add supplier page                                      ######
+        ################################################################################################################
+        ################################################################################################################
+        ###############                             Add recipient page                                             ######
+        ################################################################################################################
+
+        self.add_recipient_page = QWidget()
+        self.add_recipient_page.setObjectName(u"add_recipient_page")
+        self.gridLayout_9 = QGridLayout(self.add_recipient_page)
+        self.gridLayout_9.setSpacing(6)
+        self.gridLayout_9.setContentsMargins(6, 6, 6, 6)
+        self.gridLayout_9.setObjectName(u"gridLayout_9")
+
+        # Recipient Name
+        self.recipient_name_edit = QLineEdit(self.add_recipient_page)
+        self.recipient_name_edit.setObjectName(u"recipient_name_edit")
+        self.recipient_name_edit.setMinimumSize(QSize(0, 31))
+        self.recipient_name_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.recipient_name_edit.setFont(font3)
+        self.recipient_name_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_9.addWidget(self.recipient_name_edit, 1, 1, 1, 1)
+        # Recipient Phone
+        self.recipient_phone_edit = QLineEdit(self.add_recipient_page)
+        self.recipient_phone_edit.setObjectName(u"recipient_phone_edit")
+        self.recipient_phone_edit.setMinimumSize(QSize(0, 31))
+        self.recipient_phone_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.recipient_phone_edit.setFont(font3)
+        self.recipient_phone_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_9.addWidget(self.recipient_phone_edit, 2, 1, 1, 1)
+        # Recipient address
+        self.recipient_address_edit = QLineEdit(self.add_recipient_page)
+        self.recipient_address_edit.setObjectName(u"recipient_address_edit")
+        self.recipient_address_edit.setMinimumSize(QSize(0, 31))
+        self.recipient_address_edit.setMaximumSize(QSize(16777215, 16777215))
+        self.recipient_address_edit.setFont(font3)
+        self.recipient_address_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.gridLayout_9.addWidget(self.recipient_address_edit, 3, 1, 1, 1)
+
+        self.save_recipient_btn = QPushButton(self.add_recipient_page)
+        self.save_recipient_btn.setObjectName(u"save_recipient_btn")
+        self.save_recipient_btn.setEnabled(True)
+        sizePolicy3.setHeightForWidth(self.save_recipient_btn.sizePolicy().hasHeightForWidth())
+        self.save_recipient_btn.setSizePolicy(sizePolicy3)
+        self.save_recipient_btn.setMinimumSize(QSize(0, 60))
+        self.save_recipient_btn.setFont(font3)
+        self.save_recipient_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
+                                             "background-color: rgb(92, 184, 78);")
+        self.save_recipient_btn.clicked.connect(lambda: self.add_recipient())
+        self.gridLayout_9.addWidget(self.save_recipient_btn, 9, 0, 1, 3)
+
+        self.recipient_name_label = QLabel(self.add_recipient_page)
+        self.recipient_name_label.setObjectName(u"recipient_name_label")
+        self.recipient_name_label.setMinimumSize(QSize(0, 31))
+        self.recipient_name_label.setFont(font3)
+        self.recipient_name_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.recipient_name_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_9.addWidget(self.recipient_name_label, 1, 0, 1, 1)
+
+        self.recipient_address_label = QLabel(self.add_recipient_page)
+        self.recipient_address_label.setObjectName(u"recipient_address_label")
+        self.recipient_address_label.setMinimumSize(QSize(0, 31))
+        self.recipient_address_label.setFont(font3)
+        self.recipient_address_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.recipient_address_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_9.addWidget(self.recipient_address_label, 3, 0, 1, 1)
+
+        self.recipient_phone_label = QLabel(self.add_recipient_page)
+        self.recipient_phone_label.setObjectName(u"recipient_phone_label")
+        self.recipient_phone_label.setMinimumSize(QSize(0, 31))
+        self.recipient_phone_label.setFont(font3)
+        self.recipient_phone_label.setStyleSheet(u"color: rgb(255, 255, 255);")
+        self.recipient_phone_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_9.addWidget(self.recipient_phone_label, 2, 0, 1, 1)
+
+        self.insert_recipient_label = QLabel(self.add_recipient_page)
+        self.insert_recipient_label.setObjectName(u"insert_recipient_label")
+        self.insert_recipient_label.setMinimumSize(QSize(0, 51))
+        self.insert_recipient_label.setMaximumSize(QSize(16777215, 51))
+        self.insert_recipient_label.setFont(font1)
+        self.insert_recipient_label.setStyleSheet(u"background-color: rgb(85, 85, 255);")
+        self.insert_recipient_label.setText(u"Εισαγωγή παραλήπτη")
+        self.insert_recipient_label.setAlignment(Qt.AlignCenter)
+        self.gridLayout_9.addWidget(self.insert_recipient_label, 0, 0, 1, 3)
+        self.stackedWidget.addWidget(self.add_recipient_page)
+
+        ################################################################################################################
+        ###############                             Finish Add recipient page                                      ######
+        ################################################################################################################
         self.gridLayout_3.addWidget(self.stackedWidget, 0, 2, 8, 1)
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -1078,13 +1288,6 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(1)
 
         QMetaObject.connectSlotsByName(MainWindow)
-
-    # setupUi
-     ##################################################################################################################
-    ###############                             Add supplier page                                              ########
-    ###################################################################################################################
-
-
 
 
     def retranslateUi(self, MainWindow):
@@ -1226,6 +1429,21 @@ class Ui_MainWindow(object):
         self.search_payments_btn.setText(
             QCoreApplication.translate("MainWindow", u"\u0391\u03bd\u03b1\u03b6\u03ae\u03c4\u03b7\u03c3\u03b7", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u0391\u03c1\u03c7\u03b5\u03af\u03bf", None))
+
+        # Insert Supplier page
+        self.save_supplier_btn.setText(QCoreApplication.translate("MainWindow", u"Αποθήκευση",  None))
+        self.supplier_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
+        self.supplier_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
+        self.supplier_balance_edit.setSuffix(QCoreApplication.translate("MainWindow", u"", None))
+        self.supplier_balance_label.setText(QCoreApplication.translate("MainWindow", u"Οιπόλοιπο", None))
+        self.vat_nr_label.setText(QCoreApplication.translate("MainWindow", u"Α.Φ.Μ.", None))
+        self.supplier_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
+        # Insert Recipient page
+        # Insert Supplier page
+        self.save_recipient_btn.setText(QCoreApplication.translate("MainWindow", u"Αποθήκευση", None))
+        self.recipient_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
+        self.recipient_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
+        self.recipient_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
 
     # retranslateUi
 
@@ -1511,6 +1729,56 @@ class Ui_MainWindow(object):
         writer.save()
         msgBox = QMessageBox.information(None, "Πληροφορία", "Η εξαγωγή ολοκληρώθηκε.")
 
+    # Εισαγωγή προμηθευτή
+    def add_supplier(self):
+        supplier_name = self.supplier_name_edit.text()
+        if supplier_name == "":
+            msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο δεν μπορεί να είναι κενό!")
+            return
+        try:
+            supplier_vat = self.supplier_vat_nr_edit.text().replace(" ", "")
+            if len(supplier_vat) > 9:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. πρέπει να είναι 9 ψηφία!")
+                return
+        except ValueError:
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. πρέπει να είναι αριθμός με 9 ψηφία!")
+            return
+
+        supplier_phone = self.supplier_phone_edit.text()
+        if not supplier_phone.isdigit():
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το τηλέφωνο πρέπει να είναι αριθμός!")
+            return
+
+        supplier_address = self.supplier_address_edit.text()
+        supplier_balance = self.supplier_balance_edit.text()
+        new_supplier = Suppliers(name=supplier_name, vat_nr=supplier_vat, phone=supplier_phone, address=supplier_address,
+                                 balance=supplier_balance)
+
+        Session.add(new_supplier)
+        Session.commit()
+        # Ενημέρωση για το autocomplete
+        autocomplete(Suppliers)
+        msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο {supplier_name} αποθηκεύτηκε.")
+
+    # Εισαγωγή παραλήπτη
+    def add_recipient(self):
+        recipient_name = self.recipient_name_edit.text()
+        if recipient_name == "":
+            msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο δεν μπορεί να είναι κενό!")
+            return
+
+        recipient_phone = self.recipient_phone_edit.text()
+        if not recipient_phone.isdigit():
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το τηλέφωνο πρέπει να είναι αριθμός!")
+            return
+        recipient_address = self.recipient_address_edit.text()
+        new_recipient = Recipients(name=recipient_name, phone=recipient_phone, address=recipient_address)
+
+        Session.add(new_recipient)
+        Session.commit()
+        # Ενημέρωση για το autocomplete
+        autocomplete(Recipients)
+        msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο {recipient_name} αποθηκεύτηκε.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
