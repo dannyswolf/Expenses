@@ -32,7 +32,7 @@ class Suppliers(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     vat_nr = Column(Integer)
-    phone = Column(Integer)
+    phone = Column(String(16))
     address = Column(String(200))
     balance = Column(Integer)
     purchases = relationship("Purchases")
@@ -51,7 +51,7 @@ class Recipients(Base):
     __tablename__ = "Recipients"
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
-    phone = Column(Integer, unique=True)
+    phone = Column(String(16))
     address = Column(String(200))
     purchases = relationship("Purchases")
 
