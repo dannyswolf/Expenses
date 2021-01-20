@@ -12,6 +12,7 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 0.8 Alfa Δυνατότηα επεξεργασίας προμηθευτή και παραλήπτη
 # V 0.7 Alfa Δυνατότηα προσθήκης προμηθευτή και παραλήπτη
 # V 0.6 Alfa ready to add 'add_supplier_page'
 # V 0.5 Alfa Παραθυρο αγορών ετοιμο
@@ -34,6 +35,8 @@ import pandas as pd
 import datetime
 import sys
 import os
+
+from Edit_window import Edit_window
 from settings import root_logger, version
 from sql import Suppliers, Recipients, Payments, Purchases, Session, get_data, MultipleResultsFound, NoResultFound
 
@@ -90,6 +93,7 @@ class Ui_MainWindow(object):
         self.recipients = get_data(Recipients)
         self.purchases = get_data(Purchases)
         self.payments = get_data(Payments)
+
 
         self.font = QFont()
         self.font.setFamily(u"Calibri")
@@ -245,6 +249,7 @@ class Ui_MainWindow(object):
 
         # Autocomplete
         self.list_to_search_purchases = autocomplete_purchases()
+
         self.purchases_completer = QCompleter(self.list_to_search_purchases)
         self.search_purchases_edit.setCompleter(self.purchases_completer)
         self.search_purchases_edit.returnPressed.connect(lambda: self.update_purchases(self.search_purchases_edit.text()))
@@ -318,6 +323,7 @@ class Ui_MainWindow(object):
         self.purchases_tableWidget.setColumnWidth(3, 60)
         self.purchases_tableWidget.setColumnWidth(4, 100)
         self.purchases_tableWidget.setColumnWidth(5, 50)
+        # self.purchases_tableWidget.doubleClicked.connect(self.edit_purchase)
 
         self.gridLayout_7.addWidget(self.purchases_tableWidget, 2, 0, 1, 2)
         self.stackedWidget.addWidget(self.purchases_page)
@@ -557,7 +563,7 @@ class Ui_MainWindow(object):
         self.supplier_qcompobox_at_pay_page.setStyleSheet(u"color: rgb(255, 255, 255);")
         self.supplier_qcompobox_at_pay_page.setPlaceholderText(u"")
         self.supplier_qcompobox_at_pay_page.addItems(
-            sorted([f"{supplier}" for supplier in self.suppliers], key=str.lower))
+            sorted([f"{supplier}" for supplier in get_data(Suppliers)], key=str.lower))
         self.gridLayout_5.addWidget(self.supplier_qcompobox_at_pay_page, 2, 0, 1, 1)
         self.price_label_at_pay_page = QLabel(self.pay_page)
         self.price_label_at_pay_page.setObjectName(u"price_label_at_pay_page")
@@ -757,6 +763,7 @@ class Ui_MainWindow(object):
         self.suppliers_tableWidget.setColumnWidth(2, 100)
         self.suppliers_tableWidget.setColumnWidth(3, 150)
         self.suppliers_tableWidget.setColumnWidth(4, 60)
+        self.suppliers_tableWidget.doubleClicked.connect(lambda: self.edit(self.suppliers_tableWidget))
 
         self.gridLayout_2.addWidget(self.suppliers_tableWidget, 3, 0, 1, 2)
         self.suppliers_label = QLabel(self.suppliers_page)
@@ -775,6 +782,7 @@ class Ui_MainWindow(object):
         self.search_supplier_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
         # Autocomplete
         self.list_to_search_supplier = autocomplete(Suppliers)
+
         self.suppliers_completer = QCompleter(self.list_to_search_supplier)
         self.search_supplier_edit.setCompleter(self.suppliers_completer)
         self.search_supplier_edit.returnPressed.connect(lambda: self.update_suppliers(self.search_supplier_edit.text()))
@@ -865,7 +873,7 @@ class Ui_MainWindow(object):
         self.recipient_tableWidget.setColumnWidth(1, 250)
         self.recipient_tableWidget.setColumnWidth(2, 150)
         self.recipient_tableWidget.setColumnWidth(3, 150)
-
+        self.recipient_tableWidget.doubleClicked.connect(lambda: self.edit(self.recipient_tableWidget))
 
         self.gridLayout_4.addWidget(self.recipient_tableWidget, 3, 0, 1, 2)
         self.insert_recipient_btn_at_recipient_page = QPushButton(self.recipients_page)
@@ -892,6 +900,7 @@ class Ui_MainWindow(object):
         self.search_recipient_edit.setStyleSheet(u"color: rgb(255, 255, 255);")
         # Autocomplete
         self.list_to_search_recipient = autocomplete(Recipients)
+
         self.recipient_completer = QCompleter(self.list_to_search_recipient)
         self.search_recipient_edit.setCompleter(self.recipient_completer)
         self.search_recipient_edit.returnPressed.connect(lambda: self.update_recipients(self.search_recipient_edit.text()))
@@ -1474,8 +1483,8 @@ class Ui_MainWindow(object):
             name = QTableWidgetItem(str(data.name))
             self.suppliers_tableWidget.setItem(row, 1, name)
 
-            vat_nr = QTableWidgetItem(data.vat_nr)
-            vat_nr.setData(Qt.DisplayRole, int(data.vat_nr))
+            vat_nr = QTableWidgetItem(str(data.vat_nr))
+            # vat_nr.setData(Qt.DisplayRole, int(data.vat_nr))
             self.suppliers_tableWidget.setItem(row, 2, vat_nr)
 
             phone = QTableWidgetItem(str(data.phone))
@@ -1609,14 +1618,14 @@ class Ui_MainWindow(object):
 
     # Αποθήκευση τιμπολογίου - αγοράς
     def save_import(self):
-        print(40 * "#", "Αποθήκευση τιμολογίου - αγοράς", 40 * "#")
+
         supplier_name = self.supplier_qcompobox.currentText()
         if supplier_name == "":
             msgBox = QMessageBox.critical(None, "Πρόβλημα", "Παρακαλώ ορίστε προμηθευτή!")
             return
         invoice_nr = self.invoice_edit.text()
         date = self.date_edit.date().toPython().strftime("%#d/%#m/%Y")
-        print("date", date)
+
         recipient_name = self.recipient_comboBox.currentText()
         if recipient_name == "":
             msgBox = QMessageBox.critical(None, "Πρόβλημα", "Παρακαλώ ορίστε παραλήπτη!")
@@ -1643,6 +1652,9 @@ class Ui_MainWindow(object):
             msgBox = QMessageBox.critical(None, "Πρόβλημα", f"Ο παραλήπτης '{recipient_name}' δεν υπάρχει")
             return
         # Προσθήκη αγοράς στον πίνακα Purchases
+        print(40 * "#", "Αποθήκευση τιμολογίου - αγοράς", 40 * "#")
+        print("today", datetime.datetime.today())
+        print(f"Προμηθευτής {supplier_name} Παραλήπτης {recipient_name} Τιμή {amount} Προιόν {product} Ημερομηνία αγοράς {date}")
         item = Purchases(supplier_id=supplier_id, recipient_id=recipient_id, price=amount,
                          product=product, date=date, file="C:\\")
         Session.add(item)
@@ -1695,6 +1707,53 @@ class Ui_MainWindow(object):
         Session.commit()
         print(40 * "#", "Ολοκλήρωση πληρωμής", 40 * "#")
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Η πληρωμή του προμηθευτή {supplier.name} ολοκληρώθηκε.")
+
+    # Επεξεργασία πινάκων
+    def edit(self, tableWidget):
+
+        self.edit_window = QMainWindow(parent=None)
+        edit_supplier = Edit_window()
+        edit_supplier.setupUi(self.edit_window)
+
+        row = tableWidget.currentIndex().row()
+        id_ = tableWidget.item(row, 0)  # Περνουμε το id απο την 0 στήλη της επιλεγμένης γραμμής
+
+        columns = tableWidget.columnCount()
+        headers = [str(tableWidget.horizontalHeaderItem(i).text()) for i in range(columns)]
+        # Είναι ο πίνακας προμηθευτών
+        if len(headers) == 5:
+
+            edit_supplier.edit_label.setText(QCoreApplication.translate("MainWindow", u"Επεξεργασία προμηθευτή", None))
+
+            instance = Session.query(Suppliers).get(id_.text()) # Πέρνουμε τον supplier για να το στείλουμε το edit_supplier
+            edit_supplier.supplier_id = instance.id
+            edit_supplier.recipient_id = None
+
+            edit_supplier.vat_nr_label.setText(QCoreApplication.translate("MainWindow", f"{headers[2]}", None))
+            edit_supplier.vat_nr_edit.setText(str(instance.vat_nr))
+
+            edit_supplier.balance_label.setText(QCoreApplication.translate("MainWindow", f"{headers[4]}", None))
+            edit_supplier.balance_edit.setValue(instance.balance)
+
+        # Είναι ο πίνακας παραλήπτες
+        elif len(headers) == 4:
+
+            edit_supplier.edit_label.setText(QCoreApplication.translate("MainWindow", u"Επεξεργασία παραλήπτη", None))
+            edit_supplier.vat_nr_edit.hide()
+            edit_supplier.balance_edit.hide()
+
+            instance = Session.query(Recipients).get(id_.text())
+            edit_supplier.recipient_id = instance.id
+            edit_supplier.supplier_id = None
+
+
+        edit_supplier.name_edit.setText(instance.name)
+        edit_supplier.phone_edit.setText(str(instance.phone))
+        edit_supplier.address_edit.setText(instance.address)
+
+
+        self.edit_window.show()
+
 
     # Εξαγωγή αγορών
     def extract(self, tableWidget):
@@ -1757,7 +1816,14 @@ class Ui_MainWindow(object):
         Session.add(new_supplier)
         Session.commit()
         # Ενημέρωση για το autocomplete
-        autocomplete(Suppliers)
+        self.list_to_search_supplier = autocomplete(Suppliers)
+        self.supplier_qcompobox.clear() # Πρώτα άδειασμα
+        self.supplier_qcompobox.addItems(sorted([f"{supplier}" for supplier in get_data(Suppliers)], key=str.lower))
+
+        self.supplier_qcompobox_at_pay_page.clear()  # Πρώτα άδειασμα
+        self.supplier_qcompobox_at_pay_page.addItems(sorted([f"{supplier}" for supplier in get_data(Suppliers)], key=str.lower))
+
+
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο {supplier_name} αποθηκεύτηκε.")
 
     # Εισαγωγή παραλήπτη
@@ -1777,8 +1843,10 @@ class Ui_MainWindow(object):
         Session.add(new_recipient)
         Session.commit()
         # Ενημέρωση για το autocomplete
-        autocomplete(Recipients)
+        self.list_to_search_recipient = autocomplete(Recipients)
+
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο {recipient_name} αποθηκεύτηκε.")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

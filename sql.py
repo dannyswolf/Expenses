@@ -13,6 +13,7 @@ from settings import database,  root_logger
 
 from sqlalchemy import create_engine, Column, Integer,  String, MetaData, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
 
 sys.stderr.write = root_logger.error
@@ -30,7 +31,7 @@ class Suppliers(Base):
     __tablename__ = "Suppliers"
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
-    vat_nr = Column(Integer)
+    vat_nr = Column(String(10))
     phone = Column(String(16))
     address = Column(String(200))
     balance = Column(Integer)
