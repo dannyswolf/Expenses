@@ -12,6 +12,7 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 0.8 Alfa Ξεχωριστα επεξεργασίας προμηθευτή και παραλήπτη
 # V 0.8 Alfa Δυνατότηα επεξεργασίας προμηθευτή και παραλήπτη
 # V 0.7 Alfa Δυνατότηα προσθήκης προμηθευτή και παραλήπτη
 # V 0.6 Alfa ready to add 'add_supplier_page'
@@ -36,7 +37,8 @@ import datetime
 import sys
 import os
 
-from Edit_window import Edit_window
+from edit_supplier import Edit_supplier_window
+from edit_recipient import Edit_recipient_window
 from settings import root_logger, version
 from sql import Suppliers, Recipients, Payments, Purchases, Session, get_data, MultipleResultsFound, NoResultFound
 
@@ -763,7 +765,7 @@ class Ui_MainWindow(object):
         self.suppliers_tableWidget.setColumnWidth(2, 100)
         self.suppliers_tableWidget.setColumnWidth(3, 150)
         self.suppliers_tableWidget.setColumnWidth(4, 60)
-        self.suppliers_tableWidget.doubleClicked.connect(lambda: self.edit(self.suppliers_tableWidget))
+        self.suppliers_tableWidget.doubleClicked.connect(lambda: self.edit_supplier(self.suppliers_tableWidget))
 
         self.gridLayout_2.addWidget(self.suppliers_tableWidget, 3, 0, 1, 2)
         self.suppliers_label = QLabel(self.suppliers_page)
@@ -873,7 +875,7 @@ class Ui_MainWindow(object):
         self.recipient_tableWidget.setColumnWidth(1, 250)
         self.recipient_tableWidget.setColumnWidth(2, 150)
         self.recipient_tableWidget.setColumnWidth(3, 150)
-        self.recipient_tableWidget.doubleClicked.connect(lambda: self.edit(self.recipient_tableWidget))
+        self.recipient_tableWidget.doubleClicked.connect(lambda: self.edit_recipient(self.recipient_tableWidget))
 
         self.gridLayout_4.addWidget(self.recipient_tableWidget, 3, 0, 1, 2)
         self.insert_recipient_btn_at_recipient_page = QPushButton(self.recipients_page)
@@ -1708,11 +1710,11 @@ class Ui_MainWindow(object):
         print(40 * "#", "Ολοκλήρωση πληρωμής", 40 * "#")
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Η πληρωμή του προμηθευτή {supplier.name} ολοκληρώθηκε.")
 
-    # Επεξεργασία πινάκων
-    def edit(self, tableWidget):
+    # Επεξεργασία προμηθευτή
+    def edit_supplier(self, tableWidget):
 
         self.edit_window = QMainWindow(parent=None)
-        edit_supplier = Edit_window()
+        edit_supplier = Edit_supplier_window()
         edit_supplier.setupUi(self.edit_window)
 
         row = tableWidget.currentIndex().row()
@@ -1720,40 +1722,37 @@ class Ui_MainWindow(object):
 
         columns = tableWidget.columnCount()
         headers = [str(tableWidget.horizontalHeaderItem(i).text()) for i in range(columns)]
-        # Είναι ο πίνακας προμηθευτών
-        if len(headers) == 5:
 
-            edit_supplier.edit_label.setText(QCoreApplication.translate("MainWindow", u"Επεξεργασία προμηθευτή", None))
+        instance = Session.query(Suppliers).get(id_.text())  # Πέρνουμε τον supplier για να το στείλουμε το edit_supplier
+        edit_supplier.supplier_id = instance.id
 
-            instance = Session.query(Suppliers).get(id_.text()) # Πέρνουμε τον supplier για να το στείλουμε το edit_supplier
-            edit_supplier.supplier_id = instance.id
-            edit_supplier.recipient_id = None
-
-            edit_supplier.vat_nr_label.setText(QCoreApplication.translate("MainWindow", f"{headers[2]}", None))
-            edit_supplier.vat_nr_edit.setText(str(instance.vat_nr))
-
-            edit_supplier.balance_label.setText(QCoreApplication.translate("MainWindow", f"{headers[4]}", None))
-            edit_supplier.balance_edit.setValue(instance.balance)
-
-        # Είναι ο πίνακας παραλήπτες
-        elif len(headers) == 4:
-
-            edit_supplier.edit_label.setText(QCoreApplication.translate("MainWindow", u"Επεξεργασία παραλήπτη", None))
-            edit_supplier.vat_nr_edit.hide()
-            edit_supplier.balance_edit.hide()
-
-            instance = Session.query(Recipients).get(id_.text())
-            edit_supplier.recipient_id = instance.id
-            edit_supplier.supplier_id = None
-
-
-        edit_supplier.name_edit.setText(instance.name)
-        edit_supplier.phone_edit.setText(str(instance.phone))
-        edit_supplier.address_edit.setText(instance.address)
-
-
+        edit_supplier.supplier_name_edit.setText(instance.name)
+        edit_supplier.vat_nr_edit.setText(str(instance.vat_nr))
+        edit_supplier.supplier_phone_edit.setText(str(instance.phone))
+        edit_supplier.supplier_address_edit.setText(instance.address)
+        edit_supplier.supplier_balance_QSpinBox.setValue(instance.balance)
         self.edit_window.show()
 
+    # Επεξεργασία παραλήπτη
+    def edit_recipient(self, tableWidget):
+        self.edit_window = QMainWindow(parent=None)
+        edit_recipient = Edit_recipient_window()
+        edit_recipient.setupUi(self.edit_window)
+
+        row = tableWidget.currentIndex().row()
+        id_ = tableWidget.item(row, 0)  # Περνουμε το id απο την 0 στήλη της επιλεγμένης γραμμής
+
+        columns = tableWidget.columnCount()
+        headers = [str(tableWidget.horizontalHeaderItem(i).text()) for i in range(columns)]
+
+        # Πέρνουμε τον recipient για να το στείλουμε στο edit_recipient
+        instance = Session.query(Recipients).get(id_.text())
+        edit_recipient.recipient_id = instance.id
+        print("instance.address", instance.address)
+        edit_recipient.recipient_name_edit.setText(instance.name)
+        edit_recipient.recipient_phone_edit.setText(str(instance.phone))
+        edit_recipient.recipient_address_edit.setText(instance.address)
+        self.edit_window.show()
 
     # Εξαγωγή αγορών
     def extract(self, tableWidget):
