@@ -10,7 +10,7 @@
 
 from PySide2.QtCore import QCoreApplication, QSize, Qt, QMetaObject
 from PySide2.QtGui import QFont
-from PySide2.QtWidgets import QLineEdit, QLabel, QPushButton, QSizePolicy, QWidget, QGridLayout, QSpinBox, QMessageBox
+from PySide2.QtWidgets import QLineEdit, QLabel, QPushButton, QSizePolicy, QWidget, QGridLayout, QMessageBox
 
 from sql import Session, Recipients
 
@@ -19,7 +19,6 @@ import sys
 from settings import root_logger
 sys.stderr.write = root_logger.error
 sys.stdout.write = root_logger.info
-
 
 
 class Edit_recipient_window(object):
@@ -95,7 +94,8 @@ class Edit_recipient_window(object):
         self.delete_recipient_btn.setFont(font)
         self.delete_recipient_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
 "background-color: rgb(170, 0, 0);")
-
+        self.delete_recipient_btn.clicked.connect(lambda: self.delete())
+        self.delete_recipient_btn.clicked.connect(MainWindow.close)
         self.gridLayout.addWidget(self.delete_recipient_btn, 4, 0, 1, 1)
 
         self.recipient_name_edit = QLineEdit(self.centralwidget)
@@ -119,7 +119,7 @@ class Edit_recipient_window(object):
         self.top_recipient_label.setFont(font1)
         self.top_recipient_label.setStyleSheet(u"color: rgb(255, 255, 255);\n"
 "background-color: rgb(222, 148, 0);")
-        self.top_recipient_label.setText(u"\u0395\u03c0\u03b5\u03be\u03b5\u03c1\u03b3\u03b1\u03c3\u03af\u03b1 \u03c0\u03c1\u03bf\u03bc\u03b7\u03b8\u03b5\u03c5\u03c4\u03ae")
+        self.top_recipient_label.setText(u"Επεξεργασία παραλήπτη")
         self.top_recipient_label.setAlignment(Qt.AlignCenter)
 
         self.gridLayout.addWidget(self.top_recipient_label, 0, 0, 1, 2)
@@ -151,12 +151,12 @@ class Edit_recipient_window(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.recipient_address_label.setText(QCoreApplication.translate("MainWindow", u"\u0394\u03b9\u03b5\u03cd\u03b8\u03c5\u03bd\u03c3\u03b7", None))
-        self.recipient_phone_label.setText(QCoreApplication.translate("MainWindow", u"\u03a4\u03b7\u03bb\u03ad\u03c6\u03c9\u03bd\u03bf", None))
-        self.save_recipient_btn.setText(QCoreApplication.translate("MainWindow", u"\u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7", None))
-        self.delete_recipient_btn.setText(QCoreApplication.translate("MainWindow", u"\u0394\u03b9\u03b1\u03b3\u03c1\u03b1\u03c6\u03ae", None))
-        self.recipient_name_label.setText(QCoreApplication.translate("MainWindow", u"\u039f\u03bd\u03bf\u03bc\u03b1\u03c4\u03b5\u03c0\u03ce\u03bd\u03c5\u03bc\u03bf", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Επεξεργασία παραλήπτη", None))
+        self.recipient_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
+        self.recipient_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
+        self.save_recipient_btn.setText(QCoreApplication.translate("MainWindow", u"Αποθήκευση", None))
+        self.delete_recipient_btn.setText(QCoreApplication.translate("MainWindow", u"Διαγραφή", None))
+        self.recipient_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
     # retranslateUi
 
     def save(self):
@@ -168,3 +168,20 @@ class Edit_recipient_window(object):
         Session.commit()
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Οι αλλαγές στον {recipient.name} αποθηκεύτηκαν.")
         self.recipient_id = None
+
+    def delete(self):
+        recipient_to_delete = Session.query(Recipients).get(self.recipient_id)
+        msgbox = QMessageBox(QMessageBox.Question, "Επιβεβαίωση διαγραφής", f"Είστε σήγουρος για την διαγραφή του παραλήπτη "
+                                                          f"{recipient_to_delete.name};")
+        msgbox.addButton(QMessageBox.Yes)
+        msgbox.addButton(QMessageBox.No)
+        msgbox.setDefaultButton(QMessageBox.No)
+        reply = msgbox.exec()
+
+        if reply == QMessageBox.Yes:
+            Session.delete(recipient_to_delete)
+            Session.commit()
+            msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο παραλήπτης {recipient_to_delete.name} Διαγράφτηκε.")
+
+        else:
+            return

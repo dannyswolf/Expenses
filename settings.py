@@ -14,7 +14,7 @@ import sys
 import datetime
 
 
-version = "V 0.7 Alfa"
+version = "V 0.9 Alfa"
 
 database = "outgoings.db"
 

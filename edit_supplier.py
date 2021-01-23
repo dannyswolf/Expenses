@@ -12,7 +12,7 @@ from PySide2.QtCore import QCoreApplication, QSize, Qt, QMetaObject
 from PySide2.QtGui import QFont
 from PySide2.QtWidgets import QLineEdit, QLabel, QPushButton, QSizePolicy, QWidget, QGridLayout, QSpinBox, QMessageBox
 
-from sql import Session, Suppliers
+from sql import Session, Suppliers, MultipleResultsFound
 
 import sys
 
@@ -160,6 +160,8 @@ class Edit_supplier_window(object):
         self.delete_supplier_btn.setFont(font1)
         self.delete_supplier_btn.setStyleSheet(u"color: rgb(255, 255, 255);\n"
 "background-color: rgb(170, 0, 0);")
+        self.delete_supplier_btn.clicked.connect(lambda: self.delete())
+        self.delete_supplier_btn.clicked.connect(MainWindow.close)
 
         self.gridLayout.addWidget(self.delete_supplier_btn, 6, 0, 1, 1)
 
@@ -198,15 +200,55 @@ class Edit_supplier_window(object):
         self.save_supplier_btn.setText(QCoreApplication.translate("MainWindow", u"\u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7", None))
     # retranslateUi
 
-
+    # Αποθήκευση
     def save(self):
         supplier = Session.query(Suppliers).get(self.supplier_id)
-        supplier.name = self.supplier_name_edit.text()
-        supplier.vat_nr = self.vat_nr_edit.text()
-        supplier.phone = self.supplier_phone_edit.text()
-        supplier.address = self.supplier_address_edit.text()
-        supplier.balance = self.supplier_balance_QSpinBox.text()
+        new_name = self.supplier_name_edit.text()
+        new_vat_nr = self.vat_nr_edit.text()
+        new_phone = self.supplier_phone_edit.text()
+        new_address = self.supplier_address_edit.text()
+        new_balance = self.supplier_balance_QSpinBox.text()
+        # Ελεγχος ΑΦΜ
+        if not new_vat_nr.isdigit():
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. πρέπει να είναι αριθμός")
+            return
+        elif len(new_vat_nr) != 9:
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. πρέπει να είναι αριθμός με 9 ψηφία!")
+            return
+
+        # Ελεγχος αν υπάρχει το ΑΦΜ
+        try:
+            existing_supplier = Session.query(Suppliers).filter_by(vat_nr=new_vat_nr).one_or_none()
+            if existing_supplier.id != supplier.id:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. {supplier.vat_nr} υπάρχει στον προμηθευτή {existing_supplier.name}!")
+                return
+        except MultipleResultsFound:
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. υπάρχει πολλές φορές!")
+            return
+        supplier.name = new_name
+        supplier.vat_nr = new_vat_nr
+        supplier.phone = new_phone
+        supplier.address = new_address
+        supplier.balance = new_balance
         Session.add(supplier)
         Session.commit()
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Οι αλλαγές στον {supplier.name} αποθηκεύτηκαν.")
         self.supplier_id = None
+
+    # Διαγραφή
+    def delete(self):
+        supplier_to_delete = Session.query(Suppliers).get(self.supplier_id)
+        msgbox = QMessageBox(QMessageBox.Question, "Επιβεβαίωση διαγραφής", f"Είστε σήγουρος για την διαγραφή του προμηθευτή "
+                                                          f"{supplier_to_delete.name};")
+        msgbox.addButton(QMessageBox.Yes)
+        msgbox.addButton(QMessageBox.No)
+        msgbox.setDefaultButton(QMessageBox.No)
+        reply = msgbox.exec()
+
+        if reply == QMessageBox.Yes:
+            Session.delete(supplier_to_delete)
+            Session.commit()
+            msgBox = QMessageBox.information(None, "Πληροφορία", f"Ο προμηθευτής {supplier_to_delete.name} Διαγράφτηκε.")
+
+        else:
+            return

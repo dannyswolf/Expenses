@@ -31,15 +31,15 @@ class Suppliers(Base):
     __tablename__ = "Suppliers"
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
-    vat_nr = Column(String(10))
+    vat_nr = Column(Integer, unique=True, nullable=False)
     phone = Column(String(16))
     address = Column(String(200))
     balance = Column(Integer)
-    purchases = relationship("Purchases")
-    payments = relationship("Payments")
+    purchases = relationship("Purchases", cascade="all, delete")
+    payments = relationship("Payments", cascade="all, delete")
 
     def __repr__(self):
-        return "<Suppliers(id='%i', name='%s', vat_nr='%i', phone='%i', address='%s', balance='%i')>"\
+        return "<Suppliers(id='%i', name='%s', vat_nr='%i', phone='%s', address='%s', balance='%i')>"\
                % (self.id, self.name, self.vat_nr, self.phone, self.address, self.balance)
 
     def __str__(self):
@@ -53,7 +53,7 @@ class Recipients(Base):
     name = Column(String(50), nullable=False)
     phone = Column(String(16))
     address = Column(String(200))
-    purchases = relationship("Purchases")
+    purchases = relationship("Purchases", cascade="all, delete")
 
     def __repr__(self):
         return "<Recipients(id='%i', name='%s', phone='%i', address='%s')>" % (self.id, self.name,  self.phone, self.address)
@@ -73,6 +73,7 @@ class Purchases(Base):
     recipient_id = Column(Integer, ForeignKey('Recipients.id'))
     recipient = relationship("Recipients", backref=backref("recipient"))
 
+    invoice = Column(String(100))
     price = Column(Integer)
     product = Column(String(300))
     file = Column(String(360))
