@@ -12,6 +12,7 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 1.0 Επεξεργασία Πληρομών
 # V 0.9 Επεξεργασία αγορών
 # V 0.8 Alfa Ξεχωριστα επεξεργασίας προμηθευτή και παραλήπτη
 # V 0.8 Alfa Δυνατότηα επεξεργασίας προμηθευτή και παραλήπτη
@@ -41,6 +42,7 @@ import os
 from edit_supplier import Edit_supplier_window
 from edit_recipient import Edit_recipient_window
 from edit_purchase import Edit_Purchase_Window
+from edit_payment import Edit_Payment_Window
 from settings import root_logger, version
 from sql import Suppliers, Recipients, Payments, Purchases, Session, get_data, MultipleResultsFound, NoResultFound
 
@@ -1007,7 +1009,7 @@ class Ui_MainWindow(object):
         self.payments_tableWidget.setColumnWidth(1, 400)
         self.payments_tableWidget.setColumnWidth(2, 100)
         self.payments_tableWidget.setColumnWidth(3, 100)
-
+        self.payments_tableWidget.doubleClicked.connect(lambda: self.edit_payment(self.payments_tableWidget))
 
         self.gridLayout_6.addWidget(self.payments_tableWidget, 2, 0, 1, 3)
         self.search_payments_btn = QPushButton(self.payments_page)
@@ -1448,7 +1450,7 @@ class Ui_MainWindow(object):
         self.supplier_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
         self.supplier_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
         self.supplier_balance_edit.setSuffix(QCoreApplication.translate("MainWindow", u"", None))
-        self.supplier_balance_label.setText(QCoreApplication.translate("MainWindow", u"Οιπόλοιπο", None))
+        self.supplier_balance_label.setText(QCoreApplication.translate("MainWindow", u"Υπόλοιπο", None))
         self.vat_nr_label.setText(QCoreApplication.translate("MainWindow", u"Α.Φ.Μ.", None))
         self.supplier_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
         # Insert Recipient page
@@ -1537,6 +1539,7 @@ class Ui_MainWindow(object):
 
         # Ενημέρωση του view
         self.recipient_tableWidget.viewport().update()
+
     # Update Purchases
     def update_purchases(self, search_string=None):
         # Πρώτα αδειάζουμε τον  πίνακα
@@ -1648,6 +1651,11 @@ class Ui_MainWindow(object):
         except AttributeError:  # Αν δεν υπάρχει αυτό το όνομα 'NoneType' object has no attribute 'id'
             msgBox = QMessageBox.critical(None, "Πρόβλημα", f"Ο προμηθευτής {supplier_name} δεν υπάρχει")
             return
+        # Ελεγχος αν το όνομα υπάρχει πολλές φορές
+        except MultipleResultsFound:
+            msgBox = QMessageBox.critical(None, "Πρόβλημα", f"Το ονομά του προμηθευτή {supplier_name} υπάρχει πολλές "
+                                                            f"φορές")
+            return
 
         try:
             # Ευρεση id παραλήπτη με βάση το όνομα
@@ -1658,7 +1666,8 @@ class Ui_MainWindow(object):
             return
         # Προσθήκη αγοράς στον πίνακα Purchases
         print(40 * "#", "Αποθήκευση τιμολογίου - αγοράς", 40 * "#")
-        print(f"Προμηθευτής {supplier_name} Παραλήπτης {recipient_name} Τιμή {amount} Προιόν {product} Ημερομηνία αγοράς {date}")
+        print(f"Προμηθευτής {supplier_name} Αριθμός τιμολογίου {invoice_nr} Παραλήπτης {recipient_name} Τιμή {amount} Προιόν {product} Ημερομηνία αγοράς {date}")
+
         item = Purchases(supplier_id=supplier_id, invoice=invoice_nr, recipient_id=recipient_id, price=amount,
                          product=product, date=date, file="C:\\")
         Session.add(item)
@@ -1680,31 +1689,33 @@ class Ui_MainWindow(object):
             msgBox = QMessageBox.warning(None, "Πρόβλημα", "Παρακαλώ ορίστε προμηθευτή!")
             return
 
-        # Ελεγχος αν βάλαμε ποσό για πληρωμή
-        amount = int(self.amount_doubleSpinBox_at_pay_page.text()[:-1])  # το τελευταίο είναι το € δεν το θελουμε
-        if amount == 0 or amount == "":
-            msgBox = QMessageBox.warning(None, "Πρόβλημα", "Παρακαλώ ορίστε ποσό πληρωμής!")
-            return
-
-        print("*" * 40, "Πληρωμή", "*" * 40)
-        print("Προμηθευτή", supplier_name)
-        # Ποσό
-        amount = self.amount_doubleSpinBox_at_pay_page.text()[:-1]  # το τελευταίο είναι το € δεν το θελουμε
-        print("ποσό", amount)
-        date = self.date_QDateEdit_at_pay_page.date().toPython().strftime("%#d/%#m/%Y")
-        print("date", date)
         try:
             supplier = Session.query(Suppliers).filter_by(name=supplier_name).one_or_none()
             supplier_id = supplier.id
         except AttributeError:  # 'NoneType' object has no attribute 'id'
             msgBox = QMessageBox.critical(None, "Πρόβλημα", f"O προμηθευτής {supplier_name} δεν υπάρχει!")
             return
+        except MultipleResultsFound:
+            msgBox = QMessageBox.critical(None, "Πρόβλημα", f"Το όνομα του προμηθευτή {supplier_name} υπάρχει πολλές φορές!")
+            return
+        # Ελεγχος αν βάλαμε ποσό για πληρωμή
+        amount = int(self.amount_doubleSpinBox_at_pay_page.text()[:-1])  # το τελευταίο είναι το € δεν το θελουμε
+        if amount == 0 or amount == "":
+            msgBox = QMessageBox.warning(None, "Πρόβλημα", "Παρακαλώ ορίστε ποσό πληρωμής!")
+            return
+
+        amount = self.amount_doubleSpinBox_at_pay_page.text()[:-1]  # το τελευταίο είναι το € δεν το θελουμε
+        date = self.date_QDateEdit_at_pay_page.date().toPython().strftime("%#d/%#m/%Y")
+
         # Αφαίρεση ποσού απο τον προμηθευτή
         current_balance = int(supplier.balance)
         new_balance = int(current_balance) - int(amount)
         supplier.balance = new_balance
         Session.add(supplier)
         Session.commit()
+        print("*" * 40, "Πληρωμή", "*" * 40)
+        print(f"Προμηθευτή  {supplier_name} Ποσό {amount} Ημερομηνία {date}")
+        print(f"Ενημέρωση υπολοίπου προμηθευτή  {supplier_name} ολοκληρώθηκε")
         # Ενημέρωση πίνακα πληρωμών
         payment = Payments(supplier_id=supplier_id, amount=amount, date=date)
         Session.add(payment)
@@ -1792,6 +1803,16 @@ class Ui_MainWindow(object):
     # Εισαγωγή προμηθευτή
     def add_supplier(self):
         supplier_name = self.supplier_name_edit.text()
+        # Ελεγχος αν το όνομα υπάρχει στους προμηθευτές
+        try:
+            existing_supplier = Session.query(Suppliers).filter_by(name=supplier_name).one_or_none()
+            if existing_supplier:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Ο {supplier_name} υπάρχει με ΑΦΜ {existing_supplier.vat_nr}")
+                return
+        except MultipleResultsFound:
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Ο {supplier_name} υπάρχει πολλές φορές")
+            return
+
         if supplier_name == "":
             msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο δεν μπορεί να είναι κενό!")
             return
@@ -1814,11 +1835,8 @@ class Ui_MainWindow(object):
         except MultipleResultsFound:
             msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το Α.Φ.Μ. υπάρχει πολλές φορές!")
             return
-        supplier_phone = self.supplier_phone_edit.text()
-        # if not supplier_phone.isdigit():
-        #     msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το τηλέφωνο πρέπει να είναι αριθμός!")
-        #     return
 
+        supplier_phone = self.supplier_phone_edit.text()
         supplier_address = self.supplier_address_edit.text()
         supplier_balance = self.supplier_balance_edit.text()
         new_supplier = Suppliers(name=supplier_name, vat_nr=supplier_vat, phone=supplier_phone, address=supplier_address,
@@ -1826,6 +1844,9 @@ class Ui_MainWindow(object):
 
         Session.add(new_supplier)
         Session.commit()
+        print("*" * 40, "Εισαγωγή προμηθευτή", "*" * 40)
+        print(f"Ονοματεπώνυμο {supplier_name} ΑΦΜ {supplier_vat}, Υπόλοιπο {supplier_balance} Τηλέφωνο {supplier_phone}")
+        print("*" * 40, "Εισαγωγή προμηθευτή ολοκληρώθηκε", "*" * 40)
         # Ενημέρωση για το autocomplete
         self.list_to_search_supplier = autocomplete(Suppliers)
         self.supplier_qcompobox.clear()  # Πρώτα άδειασμα
@@ -1848,23 +1869,33 @@ class Ui_MainWindow(object):
 
     # Εισαγωγή παραλήπτη
     def add_recipient(self):
+
         recipient_name = self.recipient_name_edit.text()
+        # Αν είναι κενό
         if recipient_name == "":
             msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο δεν μπορεί να είναι κενό!")
             return
+        # Αν υπάρχει
+        try:
+            existing_recipient = Session.query(Recipients).filiter_by(name=recipient_name).one_or_none()
+            if existing_recipient:
+                msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο υπάρχει!")
+                return
+        except MultipleResultsFound:
+            msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο υπάρχει πολλές φορές!")
+            return
 
         recipient_phone = self.recipient_phone_edit.text()
-        # if not recipient_phone.isdigit():
-        #     msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το τηλέφωνο πρέπει να είναι αριθμός!")
-        #     return
         recipient_address = self.recipient_address_edit.text()
         new_recipient = Recipients(name=recipient_name, phone=recipient_phone, address=recipient_address)
 
         Session.add(new_recipient)
         Session.commit()
+        print("*" * 40, "Εισαγωγή παραλήπτη", "*" * 40)
+        print(f"Ονοματεπώνυμο {recipient_name} , Διεύθυνση {recipient_address} Τηλέφωνο {recipient_phone}")
+        print("*" * 40, "Εισαγωγή παραλήπτη ολοκληρώθηκε", "*" * 40)
         # Ενημέρωση για το autocomplete
         self.list_to_search_recipient = autocomplete(Recipients)
-
 
         self.recipient_completer = QCompleter(self.list_to_search_recipient)
         self.search_recipient_edit.setCompleter(self.recipient_completer)
@@ -1904,6 +1935,29 @@ class Ui_MainWindow(object):
         edit_purchase.date_edit.setDate(QDate_obj)
 
         edit_purchase.product_description_plainTextEdit.setPlainText(instance.product)
+        self.edit_window.show()
+
+    # Επεξεργασία Πληρωμής
+    def edit_payment(self, tableWidget):
+        self.edit_window = QMainWindow(parent=None)
+        edit_payment = Edit_Payment_Window()
+        edit_payment.setupUi(self.edit_window)
+
+        row = tableWidget.currentIndex().row()
+        id_ = tableWidget.item(row, 0)  # Περνουμε το id απο την 0 στήλη της επιλεγμένης γραμμής
+
+        # Πέρνουμε το id του πινακα purchases για να το στείλουμε στο edit_purchase
+        instance = Session.query(Payments).get(id_.text())
+        edit_payment.payment_id = instance.id
+
+        edit_payment.supplier_qcompobox.addItem(instance.supplier.name)
+        edit_payment.supplier_qcompobox.setEditable(False)
+
+        edit_payment.amount_QSpinBox.setValue(instance.amount)
+
+        QDate_obj = QDate.fromString(instance.date, "d/M/yyyy")
+        edit_payment.date_edit.setDate(QDate_obj)
+
         self.edit_window.show()
 
 

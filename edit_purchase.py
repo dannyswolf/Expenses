@@ -222,7 +222,7 @@ class Edit_Purchase_Window(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Επεξεργασία αγοράς", None))
         self.supplier_name_label.setText(QCoreApplication.translate("MainWindow",
                                                                     u"\u03a0\u03c1\u03bf\u03bc\u03b7\u03b8\u03b5\u03c5\u03c4\u03ae\u03c2",
                                                                     None))
@@ -250,20 +250,20 @@ class Edit_Purchase_Window(object):
     # Αποθήκευση
     def save(self):
         purchase = Session.query(Purchases).get(self.purchase_id)
+
+        old_invoice = purchase.invoice
+        old_product = purchase.product
         old_price = int(purchase.price)
-        print("old_price", old_price)
+        old_date = purchase.date
+
         purchase.price = int(self.price_QSpinBox.text())
-        print("new_price", purchase.price)
         # Αλλαγή οιπολύπου του προμηθευτή
         supplier = Session.query(Suppliers).get(purchase.supplier_id)
         old_balance = int(supplier.balance)
-        print("old_balance", old_balance)
         # Αφέρεση προηγούμενης τιμης προιόντος
         supplier.balance -= old_price
-        print("Αφέρεση προηγούμενης τιμης προιόντος", supplier.balance)
         # Πρόσθεση νέας τιμής προιόντος
         supplier.balance += int(purchase.price)
-        print("Πρόσθεση νέας τιμής προιόντος", supplier.balance)
         Session.add(supplier)
         Session.commit()
 
@@ -273,6 +273,16 @@ class Edit_Purchase_Window(object):
 
         Session.add(purchase)
         Session.commit()
+        print("*" * 40, "Επεξεργασία αγοράς", "*" * 40)
+        print(f"Προμηθευτής '{purchase.supplier}'  Παλιά τιμή '{old_price}' Παλιό τιμολόγιο '{old_invoice}' "
+              f"Παραλήπτης '{purchase.recipient}΄ Παλιό προιόν '{old_product}' Παλιά ημερομηνία '{old_date}'")
+
+        print(f"Προμηθευτής '{purchase.supplier}'  Νέα τιμή '{purchase.price}' Νέο τιμολόγιο '{purchase.invoice}' "
+              f"Παραλήπτης '{purchase.recipient}΄ Νέο προιόν '{purchase.product}' Νέα ημερομηνία '{purchase.date}'")
+        print("Ενημέρωση υπολοίπου προμηθευτή")
+        print(f"Παλίο υπόλοιπο προμηθευτή '{old_balance}' Νεό υπόλειπο προμηθευτή '{supplier.balance}'")
+        print("*" * 40, "Επεξεργασία αγοράς ολοκληρώθηκε", "*" * 40)
+
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Οι αλλαγές στον {purchase.supplier} αποθηκεύτηκαν.")
         self.purchase_id = None
 
@@ -286,14 +296,25 @@ class Edit_Purchase_Window(object):
         msgbox.addButton(QMessageBox.No)
         msgbox.setDefaultButton(QMessageBox.No)
         reply = msgbox.exec()
-        # Ενημέρωση οιπολοιπου προμηθευτή
-        supplier_id = purchase_to_delete.supplier_id
-        supplier = Session.query(Suppliers).get(supplier_id)
-        supplier.balance -= purchase_to_delete.price
-        Session.add(supplier)
-        Session.commit()
 
         if reply == QMessageBox.Yes:
+            # Ενημέρωση οιπολοιπου προμηθευτή
+            supplier_id = purchase_to_delete.supplier_id
+            supplier = Session.query(Suppliers).get(supplier_id)
+            old_balance = supplier.balance
+            supplier.balance -= purchase_to_delete.price
+            Session.add(supplier)
+            Session.commit()
+            print("*" * 40, "Διαγραφή αγοράς", "*" * 40)
+            print(f"Προμηθευτής '{purchase_to_delete.supplier}' Τιμή '{purchase_to_delete.price}' "
+                  f"Τιμολόγιο '{purchase_to_delete.invoice}' "
+                  f"Παραλήπτης '{purchase_to_delete.recipient}΄ Προιόν '{purchase_to_delete.product}'"
+                  f" Hμερομηνία '{purchase_to_delete.date}'")
+
+            print("Ενημέρωση υπολοίπου προμηθευτή")
+            print(f"Παλίο υπόλοιπο προμηθευτή '{old_balance}' Νεό υπόλειπο προμηθευτή '{supplier.balance}'")
+            print("*" * 40, "Διαγραφή αγοράς ολοκληρώθηκε", "*" * 40)
+            # Διαγραφή
             Session.delete(purchase_to_delete)
             Session.commit()
             msgBox = QMessageBox.information(None, "Πληροφορία", f"Η αγορά απο τον προμηθευτή  {purchase_to_delete.supplier} διαγράφτηκε.")
