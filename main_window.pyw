@@ -12,6 +12,7 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 1.1 Info added
 # V 1.1 Εισαγωγή αρχείων
 # V 1.0 Επεξεργασία Πληρομών
 # V 0.9 Επεξεργασία αγορών
@@ -22,11 +23,10 @@
 # V 0.5 Alfa Παραθυρο αγορών ετοιμο
 # V 0.4 Alfa autocomplete on search lines
 # V 0.3 Alfa
-# todo να βάλω πληροφορίες
 #
 # -------------------------------------------------------------------------------
 
-from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate
+from PySide2.QtCore import QCoreApplication, QLocale, QSize, Qt, QDateTime, QRect, QMetaObject, QDate, Slot
 from PySide2.QtGui import QPalette, QFont, QBrush, QCursor, QColor, QIcon
 from PySide2.QtWidgets import QAbstractScrollArea, QTableWidgetItem, QTableWidget, QLineEdit, QLabel, QFrame, \
     QMainWindow, QComboBox, QStackedWidget, QPushButton, QSizePolicy, QWidget, QGridLayout, QApplication, \
@@ -1260,10 +1260,10 @@ class Ui_MainWindow(object):
         palette.setBrush(QPalette.Disabled, QPalette.Window, brush1)
         self.menubar.setPalette(palette)
         self.menu = QMenu(self.menubar)
+        self.menu.addAction("Info")
         self.menu.setObjectName(u"menu")
-        self.actionInfo = QAction(MainWindow)
-        self.actionInfo.setObjectName(u"actionInfo")
-        self.actionInfo.triggered.connect(lambda: self.show_info())
+        self.menubar.addMenu(self.menu)
+        self.menu.triggered[QAction].connect(self.show_info)
 
 
         palette1 = QPalette()
@@ -1469,7 +1469,7 @@ class Ui_MainWindow(object):
         self.recipient_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
         self.recipient_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
         self.recipient_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
-        self.actionInfo.setText(QCoreApplication.translate("MainWindow", u"Info", None))
+
 
     # retranslateUi
 
@@ -2012,6 +2012,7 @@ class Ui_MainWindow(object):
         self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Αρχείο για προσθήκη", None))
 
 
+    @Slot()
     def show_info(self,):
         QMessageBox.information(None, "Πληροφορίες", f""" 
             Αuthor     : "Jordanis Ntini"
