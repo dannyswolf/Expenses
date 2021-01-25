@@ -204,6 +204,16 @@ class Edit_supplier_window(object):
     def save(self):
         supplier = Session.query(Suppliers).get(self.supplier_id)
         new_name = self.supplier_name_edit.text()
+        # Ελεγχος αν το όνομα υπάρχει στους προμηθευτές
+        try:
+            existing_supplier = Session.query(Suppliers).filter_by(name=new_name).one_or_none()
+            if existing_supplier.id != supplier.id:  # Αν δεν είναι ο ίδιος
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Ο {new_name} υπάρχει με ΑΦΜ {existing_supplier.vat_nr}")
+                return
+        except MultipleResultsFound:
+            msgBox = QMessageBox.critical(None, "Σφάλμα", f"Το {new_name} υπάρχει πολλές φορές")
+            return
+
         new_vat_nr = self.vat_nr_edit.text()
         new_phone = self.supplier_phone_edit.text()
         new_address = self.supplier_address_edit.text()

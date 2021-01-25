@@ -12,6 +12,7 @@
 #                  ΕΞΟΔΑ
 #                  Ντίνι Ιορδάνης
 #                  2021
+# V 1.1 Εισαγωγή αρχείων
 # V 1.0 Επεξεργασία Πληρομών
 # V 0.9 Επεξεργασία αγορών
 # V 0.8 Alfa Ξεχωριστα επεξεργασίας προμηθευτή και παραλήπτη
@@ -21,7 +22,7 @@
 # V 0.5 Alfa Παραθυρο αγορών ετοιμο
 # V 0.4 Alfa autocomplete on search lines
 # V 0.3 Alfa
-# todo αλλαγή πεδίων με tab
+# todo να βάλω πληροφορίες
 #
 # -------------------------------------------------------------------------------
 
@@ -30,10 +31,12 @@ from PySide2.QtGui import QPalette, QFont, QBrush, QCursor, QColor, QIcon
 from PySide2.QtWidgets import QAbstractScrollArea, QTableWidgetItem, QTableWidget, QLineEdit, QLabel, QFrame, \
     QMainWindow, QComboBox, QStackedWidget, QPushButton, QSizePolicy, QWidget, QGridLayout, QApplication, \
     QStyleFactory, QAbstractItemView, QDateEdit, QAbstractSpinBox, QDateTimeEdit, QSpinBox, QPlainTextEdit, \
-    QMenu, QMenuBar, QCompleter, QFileDialog, QMessageBox
+    QMenu, QMenuBar, QCompleter, QFileDialog, QMessageBox, QAction
 
 # Για εξαγωγή σε excel
 import pandas as pd
+# Για αποθύκευση αρχείου
+import shutil
 
 import datetime
 import sys
@@ -100,6 +103,8 @@ class Ui_MainWindow(object):
         self.purchases = get_data(Purchases)
         self.payments = get_data(Payments)
 
+        self.files_path = None
+        self.filename = None
 
         self.font = QFont()
         self.font.setFamily(u"Calibri")
@@ -442,10 +447,11 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.add_file_btn.sizePolicy().hasHeightForWidth())
         self.add_file_btn.setSizePolicy(sizePolicy1)
-        self.add_file_btn.setMinimumSize(QSize(0, 0))
+        self.add_file_btn.setMinimumSize(QSize(0, 60))
         self.add_file_btn.setFont(font3)
         self.add_file_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);\n"
                                         "color: rgb(255, 255, 255);")
+        self.add_file_btn.clicked.connect(lambda: self.add_file())
 
         self.gridLayout.addWidget(self.add_file_btn, 11, 0, 1, 1)
         self.invoice_label = QLabel(self.import_page)
@@ -516,7 +522,7 @@ class Ui_MainWindow(object):
         sizePolicy5.setVerticalStretch(0)
         sizePolicy5.setHeightForWidth(self.save_btn.sizePolicy().hasHeightForWidth())
         self.save_btn.setSizePolicy(sizePolicy5)
-        self.save_btn.setMinimumSize(QSize(0, 0))
+        self.save_btn.setMinimumSize(QSize(0, 60))
         self.save_btn.setMaximumSize(QSize(16777215, 60))
         font6 = QFont()
         font6.setFamily(u"Calibri")
@@ -1255,6 +1261,11 @@ class Ui_MainWindow(object):
         self.menubar.setPalette(palette)
         self.menu = QMenu(self.menubar)
         self.menu.setObjectName(u"menu")
+        self.actionInfo = QAction(MainWindow)
+        self.actionInfo.setObjectName(u"actionInfo")
+        self.actionInfo.triggered.connect(lambda: self.show_info())
+
+
         palette1 = QPalette()
         brush3 = QBrush(QColor(255, 255, 255, 255))
         brush3.setStyle(Qt.SolidPattern)
@@ -1296,6 +1307,7 @@ class Ui_MainWindow(object):
         self.menu.setPalette(palette1)
         MainWindow.setMenuBar(self.menubar)
         self.menubar.addAction(self.menu.menuAction())
+
 
         self.retranslateUi(MainWindow)
 
@@ -1351,9 +1363,7 @@ class Ui_MainWindow(object):
         self.product_description_label.setText(QCoreApplication.translate("MainWindow",
                                                                           u"\u03a0\u03b5\u03c1\u03b9\u03b3\u03c1\u03b1\u03c6\u03ae \u03c0\u03c1\u03bf\u03b9\u03cc\u03bd\u03c4\u03bf\u03c2",
                                                                           None))
-        self.add_file_btn.setText(QCoreApplication.translate("MainWindow",
-                                                             u"\u03a0\u03c1\u03bf\u03c3\u03b8\u03ae\u03ba\u03b7 \u03b1\u03c1\u03c7\u03b5\u03af\u03bf\u03c5",
-                                                             None))
+        self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Προσθήκη αρχείου", None))
         self.invoice_label.setText(QCoreApplication.translate("MainWindow",
                                                               u"\u0391\u03c1\u03b9\u03b8\u03bc\u03cc\u03c2 \u03c4\u03b9\u03bc\u03bf\u03bb\u03bf\u03b3\u03af\u03bf\u03c5",
                                                               None))
@@ -1443,7 +1453,7 @@ class Ui_MainWindow(object):
 
         self.search_payments_btn.setText(
             QCoreApplication.translate("MainWindow", u"\u0391\u03bd\u03b1\u03b6\u03ae\u03c4\u03b7\u03c3\u03b7", None))
-        self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u0391\u03c1\u03c7\u03b5\u03af\u03bf", None))
+        self.menu.setTitle(QCoreApplication.translate("MainWindow", u"Info", None))
 
         # Insert Supplier page
         self.save_supplier_btn.setText(QCoreApplication.translate("MainWindow", u"Αποθήκευση",  None))
@@ -1459,6 +1469,7 @@ class Ui_MainWindow(object):
         self.recipient_name_label.setText(QCoreApplication.translate("MainWindow", u"Ονοματεπώνυμο", None))
         self.recipient_address_label.setText(QCoreApplication.translate("MainWindow", u"Διεύθυνση", None))
         self.recipient_phone_label.setText(QCoreApplication.translate("MainWindow", u"Τηλέφωνο", None))
+        self.actionInfo.setText(QCoreApplication.translate("MainWindow", u"Info", None))
 
     # retranslateUi
 
@@ -1664,20 +1675,40 @@ class Ui_MainWindow(object):
         except AttributeError:  # Αν δεν υπάρχει αυτό το όνομα 'NoneType' object has no attribute 'id'
             msgBox = QMessageBox.critical(None, "Πρόβλημα", f"Ο παραλήπτης '{recipient_name}' δεν υπάρχει")
             return
-        # Προσθήκη αγοράς στον πίνακα Purchases
-        print(40 * "#", "Αποθήκευση τιμολογίου - αγοράς", 40 * "#")
-        print(f"Προμηθευτής {supplier_name} Αριθμός τιμολογίου {invoice_nr} Παραλήπτης {recipient_name} Τιμή {amount} Προιόν {product} Ημερομηνία αγοράς {date}")
+        # Ελεγχος αν ο χρήστης εχει επιλέξει αρχείο
+        if self.filename:
+            self.files_path = "files" + "/" + supplier.name + "/" + str(datetime.datetime.now().strftime("%d-%m-%Y-%H-%M-%S")) + "/"
+
+            # Δημηουργία φακέλου για το αρχείο
+            if not os.path.exists(self.files_path):
+                os.makedirs(self.files_path, exist_ok=True)
+            #  Returns the absolute path to the newly created file.
+            # If follow_symlinks is false, and src is a symbolic link, dst will be created as a symbolic link.
+            # If follow_symlinks is true and src is a symbolic link, dst will be a copy of the file src refers to.
+            file_to_add = os.path.abspath(shutil.copy(self.filename, self.files_path, follow_symlinks=True))
+
+        else:
+            file_to_add = None
 
         item = Purchases(supplier_id=supplier_id, invoice=invoice_nr, recipient_id=recipient_id, price=amount,
-                         product=product, date=date, file="C:\\")
+                         product=product, date=date, file=file_to_add)
         Session.add(item)
 
-        # Προσθήκη ποσού στο προμηθευτή αφου εγινε αγορα
         supplier.balance += int(amount)
         Session.add(supplier)
-
         Session.commit()
+
+        # Προσθήκη αγοράς στον πίνακα Purchases
+        print(40 * "#", "Αποθήκευση τιμολογίου - αγοράς", 40 * "#")
+        print(f"Προμηθευτής '{supplier_name}' Αριθμός τιμολογίου '{invoice_nr}' Παραλήπτης '{recipient_name}' "
+              f"Τιμή '{amount}' Προιόν '{product}' Ημερομηνία αγοράς '{date}' Αρχείο '{file_to_add}'")
         print(40 * "#", "Save Done", 40 * "#")
+
+        self.filename = None
+        self.files_path = None
+        self.add_file_btn.setStyleSheet(u"background-color: rgb(170, 85, 0); color: rgb(255, 255, 255);")
+        self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Προσθήκη αρχείου", None))
+
         msgBox = QMessageBox.information(None, "Πληροφορία", f"Η αγορά απο προμηθευτή {supplier.name} ολοκληρώθηκε.")
 
     # Πληρωμή προμηθευτή
@@ -1877,7 +1908,7 @@ class Ui_MainWindow(object):
             return
         # Αν υπάρχει
         try:
-            existing_recipient = Session.query(Recipients).filiter_by(name=recipient_name).one_or_none()
+            existing_recipient = Session.query(Recipients).filter_by(name=recipient_name).one_or_none()
             if existing_recipient:
                 msgBox = QMessageBox.warning(None, "Σφάλμα", f"Το Ονοματεπώνυμο υπάρχει!")
                 return
@@ -1923,6 +1954,18 @@ class Ui_MainWindow(object):
         instance = Session.query(Purchases).get(id_.text())
         edit_purchase.purchase_id = instance.id
 
+        # Ελεγχος αν υπάρχει αρχείο
+        file = instance.file
+
+        try:
+            if os.path.isfile(file):
+                edit_purchase.add_file_btn.hide()  # Αποκρυψη προσθήκης αρχείου αφου υπάρχει
+                edit_purchase.view_file_btn.show()  # εμφάνιση προβολής αρχείου
+                edit_purchase.delete_file_btn.show()  # εμφάνιση διαγραφής αρχείου
+                edit_purchase.file = instance.file
+        except TypeError:  # stat: path should be string, bytes, os.PathLike or integer, not NoneType
+            pass  # Δεν υπάρχει το αρχείο
+
         edit_purchase.supplier_qcompobox.addItem(instance.supplier.name)
         edit_purchase.supplier_qcompobox.setEditable(False)
 
@@ -1959,6 +2002,28 @@ class Ui_MainWindow(object):
         edit_payment.date_edit.setDate(QDate_obj)
 
         self.edit_window.show()
+
+    # Εισαγωγή αρχείου
+    def add_file(self):
+        self.filename, filters = QFileDialog.getOpenFileName(None, caption='Προσθήκη αρχείου', dir='.',
+                                                                 filter='*.pdf')
+
+        self.add_file_btn.setStyleSheet(u"background-color: rgb(92, 184, 78); color: rgb(255, 255, 255);")
+        self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Αρχείο για προσθήκη", None))
+
+
+    def show_info(self,):
+        QMessageBox.information(None, "Πληροφορίες", f""" 
+            Αuthor     : "Jordanis Ntini"
+            Copyright  : "Copyright © {datetime.datetime.today().year}"
+            Credits    : 'Athanasia Tzampazi'
+            Version    : '{version}'
+            Maintainer : "Jordanis Ntini"
+            Email      : "ntinisiordanis@gmail.com"
+            Status     : 'Development' 
+            For        : Νάτσης Αντώνης
+    
+        """)
 
 
 if __name__ == "__main__":

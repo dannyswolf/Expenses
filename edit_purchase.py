@@ -11,11 +11,15 @@
 from PySide2.QtCore import QCoreApplication, QSize, Qt, QMetaObject, QDateTime, QDate, QTime
 from PySide2.QtGui import QFont
 from PySide2.QtWidgets import QLineEdit, QLabel, QPushButton, QSizePolicy, QWidget, QGridLayout, QSpinBox, QMessageBox, \
-    QComboBox, QDateEdit, QAbstractSpinBox, QDateTimeEdit, QPlainTextEdit
+    QComboBox, QDateEdit, QAbstractSpinBox, QDateTimeEdit, QPlainTextEdit, QFileDialog
 
-from sql import Session, Recipients, Suppliers, Purchases
+from sql import Session, Suppliers, Purchases
 
+import datetime
 import sys
+import shutil
+import os
+import subprocess
 
 from settings import root_logger
 
@@ -27,11 +31,12 @@ class Edit_Purchase_Window(object):
     def __init__(self, parent=None):
         super(Edit_Purchase_Window, self).__init__()
         self.purchase_id = None
+        self.file = None
 
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(648, 458)
+        MainWindow.resize(733, 507)
         MainWindow.setStyleSheet(u"background-color: rgb(55, 88, 120);")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -136,7 +141,7 @@ class Edit_Purchase_Window(object):
                                       "background-color: rgb(170, 0, 0);")
         self.delete_btn.clicked.connect(lambda: self.delete())
         self.delete_btn.clicked.connect(MainWindow.close)
-        self.gridLayout.addWidget(self.delete_btn, 7, 0, 1, 1)
+        self.gridLayout.addWidget(self.delete_btn, 10, 0, 1, 1)
 
         self.save_btn = QPushButton(self.centralwidget)
         self.save_btn.setObjectName(u"save_btn")
@@ -149,7 +154,7 @@ class Edit_Purchase_Window(object):
                                     "background-color: rgb(92, 184, 78);")
         self.save_btn.clicked.connect(lambda: self.save())
         self.save_btn.clicked.connect(MainWindow.close)
-        self.gridLayout.addWidget(self.save_btn, 7, 1, 1, 2)
+        self.gridLayout.addWidget(self.save_btn, 10, 1, 1, 2)
 
         self.invoice_edit = QLineEdit(self.centralwidget)
         self.invoice_edit.setObjectName(u"invoice_edit")
@@ -210,13 +215,52 @@ class Edit_Purchase_Window(object):
         self.product_description_plainTextEdit.setFont(font1)
         self.product_description_plainTextEdit.setStyleSheet(u"color: rgb(255, 255, 255);")
 
-        self.gridLayout.addWidget(self.product_description_plainTextEdit, 6, 1, 1, 1)
+        self.gridLayout.addWidget(self.product_description_plainTextEdit, 6, 1, 2, 1)
+
+        # Προσθήκη αρχείου
+        self.add_file_btn = QPushButton(self.centralwidget)
+        self.add_file_btn.setObjectName(u"add_file_btn")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.add_file_btn.sizePolicy().hasHeightForWidth())
+        self.add_file_btn.setSizePolicy(sizePolicy1)
+        self.add_file_btn.setMinimumSize(QSize(0, 0))
+        self.add_file_btn.setFont(font1)
+        self.add_file_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);\n"
+                                        "color: rgb(255, 255, 255);")
+        self.add_file_btn.clicked.connect(lambda: self.add_file())
+        self.gridLayout.addWidget(self.add_file_btn, 6, 0, 1, 1)
+        # View File Btn
+        self.view_file_btn = QPushButton(self.centralwidget)
+        self.view_file_btn.setObjectName(u"view_file_btn")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.view_file_btn.sizePolicy().hasHeightForWidth())
+        self.view_file_btn.setSizePolicy(sizePolicy1)
+        self.view_file_btn.setMinimumSize(QSize(0, 0))
+        self.view_file_btn.setFont(font1)
+        self.view_file_btn.setStyleSheet(u"background-color: rgb(170, 85, 0);\n"
+                                         "color: rgb(255, 255, 255);")
+        self.view_file_btn.hide()
+        self.view_file_btn.clicked.connect(lambda: self.view_file())
+        self.gridLayout.addWidget(self.view_file_btn, 7, 0, 1, 1)
+
+        self.delete_file_btn = QPushButton(self.centralwidget)
+        self.delete_file_btn.setObjectName(u"delete_file_btn")
+        sizePolicy1.setHeightForWidth(self.delete_file_btn.sizePolicy().hasHeightForWidth())
+        self.delete_file_btn.setSizePolicy(sizePolicy1)
+        self.delete_file_btn.setMinimumSize(QSize(0, 0))
+        self.delete_file_btn.setFont(font1)
+        self.delete_file_btn.setStyleSheet(u"background-color: rgb(170, 0, 0);\n"
+                                           "color: rgb(255, 255, 255);")
+        self.delete_file_btn.hide()
+        self.delete_file_btn.clicked.connect(lambda: self.delete_file())
+        self.gridLayout.addWidget(self.delete_file_btn, 9, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
-
         self.retranslateUi(MainWindow)
-
-
         QMetaObject.connectSlotsByName(MainWindow)
 
     # setupUi
@@ -244,13 +288,22 @@ class Edit_Purchase_Window(object):
         self.product_description_label.setText(QCoreApplication.translate("MainWindow",
                                                                           u"\u03a0\u03b5\u03c1\u03b9\u03b3\u03c1\u03b1\u03c6\u03ae \u03c0\u03c1\u03bf\u03b9\u03cc\u03bd\u03c4\u03bf\u03c2",
                                                                           None))
+        self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Προσθήκη αρχείου", None))
+        self.view_file_btn.setText(QCoreApplication.translate("MainWindow", u"Προβολή αρχείου", None))
+        self.delete_file_btn.setText(QCoreApplication.translate("MainWindow", u"Διαγραφή αρχείου", None))
 
     # retranslateUi
 
     # Αποθήκευση
     def save(self):
         purchase = Session.query(Purchases).get(self.purchase_id)
-
+        if self.file:
+            files_path = "files" + "/" + purchase.supplier.name + "/" + str(datetime.datetime.now().strftime("%d-%m-%Y-%H-%M-%S")) + "/"
+            # Δημηουργία φακέλου για το αρχείο
+            if not os.path.exists(files_path):
+                os.makedirs(files_path, exist_ok=True)
+            file_to_add = os.path.abspath(shutil.copy(self.file, files_path, follow_symlinks=True))
+            purchase.file = file_to_add
         old_invoice = purchase.invoice
         old_product = purchase.product
         old_price = int(purchase.price)
@@ -298,6 +351,14 @@ class Edit_Purchase_Window(object):
         reply = msgbox.exec()
 
         if reply == QMessageBox.Yes:
+            # Διαγραφή αρχείου
+            try:
+                shutil.rmtree(os.path.dirname(self.file))
+            except NotADirectoryError:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Αδυναμία διαγραφής αρχείου")
+                return
+            except TypeError:  # expected str, bytes or os.PathLike object, not NoneType
+                pass
             # Ενημέρωση οιπολοιπου προμηθευτή
             supplier_id = purchase_to_delete.supplier_id
             supplier = Session.query(Suppliers).get(supplier_id)
@@ -321,3 +382,50 @@ class Edit_Purchase_Window(object):
 
         else:
             return
+
+    def view_file(self):
+        if sys.platform == "linux":
+
+            file_to_open = str(self.file).replace(" ", '\\ ')
+            # file_to_open = os.path.join(self.images_path + self.filenames[self.index])
+            os.system(f'okular {file_to_open}')
+        else:
+            file_to_open = str(self.file)
+
+            subprocess.Popen(file_to_open, shell=True)
+
+    def delete_file(self):
+        msgbox = QMessageBox(QMessageBox.Question, "Επιβεβαίωση διαγραφής",
+                             f"Είστε σήγουρος για την διαγραφή τoυ αρχείου ")
+        msgbox.addButton(QMessageBox.Yes)
+        msgbox.addButton(QMessageBox.No)
+        msgbox.setDefaultButton(QMessageBox.No)
+        reply = msgbox.exec()
+
+        if reply == QMessageBox.Yes:
+            try:
+                shutil.rmtree(os.path.dirname(self.file))
+                self.file = None
+                self.view_file_btn.hide()
+                self.delete_file_btn.hide()
+                self.add_file_btn.show()
+                # Ενημέρωση βάσης δεδομέων για την διαγραφή αρχείου
+                purchase = Session.query(Purchases).get(self.purchase_id)
+                purchase.file = None
+                Session.add(purchase)
+                Session.commit()
+                msgBox = QMessageBox.information(None, "Πληροφορία", "Η διαγραφή του αρχείου ολοκληρώθηκε")
+            except NotADirectoryError:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Αδυναμία διαγραφής αρχείου")
+                return
+            except FileNotFoundError:
+                msgBox = QMessageBox.critical(None, "Σφάλμα", f"Δεν βρέθηκε αρχείο")
+                return
+
+    def add_file(self):
+        self.file, filters = QFileDialog.getOpenFileName(None, caption='Προσθήκη αρχείου', dir='.',
+                                                                 filter='*.pdf')
+
+        self.add_file_btn.setStyleSheet(u"background-color: rgb(92, 184, 78); color: rgb(255, 255, 255);")
+        self.add_file_btn.setText(QCoreApplication.translate("MainWindow", u"Αρχείο για προσθήκη", None))
+        self.add_file_btn.setEnabled(False)
